@@ -66,7 +66,6 @@ use pocketmine\network\mcpe\protocol\SetPlayerGameTypePacket;
 use pocketmine\network\mcpe\protocol\ShowCreditsPacket;
 use pocketmine\network\mcpe\protocol\SpawnExperienceOrbPacket;
 use pocketmine\network\mcpe\protocol\TextPacket;
-use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
 use pocketmine\Player;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
@@ -254,7 +253,7 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 	}
 
 	public function handlePlayerSkin(PlayerSkinPacket $packet) : bool{
-		return $this->player->changeSkin(SkinAdapterSingleton::get()->fromSkinData($packet->skin), $packet->newSkinName, $packet->oldSkinName);
+		return $this->player->changeSkin($packet->skin);
 	}
 
 	public function handleBookEdit(BookEditPacket $packet) : bool{
