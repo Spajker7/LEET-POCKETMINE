@@ -816,9 +816,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			return true;
 		}
 
-		echo "From change skin:\n";
-		$skin->printSkin();
-
 		$this->setSkin($ev->getNewSkin());
 		$this->sendSkin($this->server->getOnlinePlayers());
 		return true;
