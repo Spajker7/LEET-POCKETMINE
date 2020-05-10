@@ -34,6 +34,8 @@ use pocketmine\entity\EffectInstance;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\entity\object\ItemEntity;
+use pocketmine\entity\PersonaPieceTintColor;
+use pocketmine\entity\PersonaSkinPiece;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\entity\Skin;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
@@ -146,13 +148,7 @@ use pocketmine\network\mcpe\protocol\types\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\CommandParameter;
 use pocketmine\network\mcpe\protocol\types\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
-use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
-use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
-use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
-use pocketmine\network\mcpe\protocol\types\SkinAnimation;
-use pocketmine\network\mcpe\protocol\types\SkinData;
-use pocketmine\network\mcpe\protocol\types\SkinImage;
 use pocketmine\network\mcpe\protocol\UpdateAttributesPacket;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 use pocketmine\network\mcpe\VerifyLoginTask;
@@ -167,6 +163,8 @@ use pocketmine\tile\ItemFrame;
 use pocketmine\tile\Spawnable;
 use pocketmine\tile\Tile;
 use pocketmine\timings\Timings;
+use pocketmine\utils\SerializedImage;
+use pocketmine\utils\SkinAnimation;
 use pocketmine\utils\TextFormat;
 use pocketmine\utils\UUID;
 use function abs;
@@ -805,7 +803,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	 * Called when a player changes their skin.
 	 * Plugin developers should not use this, use setSkin() and sendSkin() instead.
 	 */
-	public function changeSkin(Skin $skin, string $newSkinName, string $oldSkinName) : bool{
+	public function changeSkin(Skin $skin) : bool{
 		if(!$skin->isValid()){
 			return false;
 		}
@@ -817,6 +815,9 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$this->sendSkin([$this]);
 			return true;
 		}
+
+		echo "From change skin:\n";
+		$skin->printSkin();
 
 		$this->setSkin($ev->getNewSkin());
 		$this->sendSkin($this->server->getOnlinePlayers());
@@ -1856,42 +1857,81 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$this->uuid = UUID::fromString($packet->clientUUID);
 		$this->rawUUID = $this->uuid->toBinary();
 
+		if(isset($packet->clientData["SkinData"])){
+			$data = base64_decode($packet->clientData["SkinData"]);
+			if(isset($packet->clientData["SkinImageWidth"], $packet->clientData["SkinImageHeight"])){
+				$skinData = new SerializedImage((int) $packet->clientData['SkinImageHeight'], (int) $packet->clientData['SkinImageWidth'], $data);
+			}else{
+				$skinData = SerializedImage::fromLegacy(base64_decode($data));
+			}
+		}else{
+			$skinData = SerializedImage::null();
+		}
+
+		if(isset($packet->clientData["CapeData"])){
+			$data = base64_decode($packet->clientData["CapeData"]);
+			if(isset($packet->clientData["CapeImageWidth"], $packet->clientData["CapeImageHeight"])){
+				$capeData = new SerializedImage((int) $packet->clientData["CapeImageWidth"], (int) $packet->clientData["CapeImageHeight"], $data);
+			}else{
+				$capeData = SerializedImage::fromLegacy(base64_decode($data));
+			}
+		}else{
+			$capeData = SerializedImage::null();
+		}
+
+		var_dump($packet->clientData);
+
 		$animations = [];
-		foreach($packet->clientData["AnimatedImageData"] as $animation){
-			$animations[] = new SkinAnimation(new SkinImage($animation["ImageHeight"], $animation["ImageWidth"], base64_decode($animation["Image"], true)), $animation["Type"], $animation["Frames"]);
+		if(isset($packet->clientData["AnimatedImageData"])){
+			foreach($packet->clientData["AnimatedImageData"] as $data){
+				$animations[] = new SkinAnimation(new SerializedImage($data["ImageWidth"], $data["ImageHeight"], base64_decode($data["Image"])), $data["Type"], $data["Frames"]);
+			}
 		}
 
 		$personaPieces = [];
-		foreach($packet->clientData["PersonaPieces"] as $piece){
-			$personaPieces[] = new PersonaSkinPiece($piece["PieceId"], $piece["PieceType"], $piece["PackId"], $piece["IsDefault"], $piece["ProductId"]);
+		if(isset($packet->clientData["PersonaPieces"])){
+			foreach($packet->clientData["PersonaPieces"] as $piece){
+				$personaPieces[] = new PersonaSkinPiece($piece["PieceId"], $piece["PieceType"], $piece["PackId"], $piece["IsDefault"], $piece["ProductId"]);
+			}
 		}
+
 
 		$pieceTintColors = [];
-		foreach($packet->clientData["PieceTintColors"] as $tintColor){
-			$pieceTintColors[] = new PersonaPieceTintColor($tintColor["PieceType"], $tintColor["Colors"]);
+		if(isset($packet->clientData["PieceTintColors"])) {
+			foreach($packet->clientData["PieceTintColors"] as $tintColor){
+				$pieceTintColors[] = new PersonaPieceTintColor($tintColor["PieceType"], $tintColor["Colors"]);
+			}
 		}
 
-		$skinData = new SkinData(
+
+
+		$resourcePatch = "";
+
+		if(isset($packet->clientData["SkinResourcePatch"])) {
+			$patch = json_decode(base64_decode($packet->clientData["SkinResourcePatch"], true), true);
+			unset($patch["persona_reset_resource_definitions"]);
+			$resourcePatch = json_encode($patch);
+		}
+
+		$skin = new Skin(
 			$packet->clientData["SkinId"],
-			base64_decode($packet->clientData["SkinResourcePatch"] ?? "", true),
-			new SkinImage($packet->clientData["SkinImageHeight"], $packet->clientData["SkinImageWidth"], base64_decode($packet->clientData["SkinData"], true)),
+			$resourcePatch,
+			$skinData,
 			$animations,
-			new SkinImage($packet->clientData["CapeImageHeight"], $packet->clientData["CapeImageWidth"], base64_decode($packet->clientData["CapeData"] ?? "", true)),
+			$capeData,
 			base64_decode($packet->clientData["SkinGeometryData"] ?? "", true),
 			base64_decode($packet->clientData["SkinAnimationData"] ?? "", true),
-			$packet->clientData["PremiumSkin"] ?? false,
-			$packet->clientData["PersonaSkin"] ?? false,
-			$packet->clientData["CapeOnClassicSkin"] ?? false,
+			(bool) ($packet->clientData["PremiumSkin"] ?? false),
+			(bool) ($packet->clientData["PersonaSkin"] ?? false),
+			(bool) ($packet->clientData["CapeOnClassicSkin"] ?? false),
 			$packet->clientData["CapeId"] ?? "",
 			null,
-			$packet->clientData["ArmSize"] ?? SkinData::ARM_SIZE_WIDE,
+			$packet->clientData["ArmSize"] ?? Skin::ARM_SIZE_WIDE,
 			$packet->clientData["SkinColor"] ?? "",
 			$personaPieces,
 			$pieceTintColors,
-			true
+			false // Client sent skins are untrusted
 		);
-
-		$skin = SkinAdapterSingleton::get()->fromSkinData($skinData);
 
 		if(!$skin->isValid()){
 			$this->close("", "disconnectionScreen.invalidSkin");

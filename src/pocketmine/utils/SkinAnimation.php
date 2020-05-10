@@ -21,35 +21,33 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
 
-final class PersonaPieceTintColor{
+namespace pocketmine\utils;
 
-	public const PIECE_TYPE_PERSONA_EYES = "persona_eyes";
-	public const PIECE_TYPE_PERSONA_HAIR = "persona_hair";
-	public const PIECE_TYPE_PERSONA_MOUTH = "persona_mouth";
 
-	/** @var string */
-	private $pieceType;
-	/** @var string[] */
-	private $colors;
+class SkinAnimation{
+	/** @var SerializedImage */
+	private $image;
+	/** @var int */
+	private $type;
+	/** @var float */
+	private $frames;
 
-	/**
-	 * @param string[] $colors
-	 */
-	public function __construct(string $pieceType, array $colors){
-		$this->pieceType = $pieceType;
-		$this->colors = $colors;
+	public function __construct(SerializedImage $image, int $type, float $frames){
+		$this->image = $image;
+		$this->type = $type;
+		$this->frames = $frames;
 	}
 
-	public function getPieceType() : string{
-		return $this->pieceType;
+	public function getImage() : SerializedImage{
+		return $this->image;
 	}
 
-	/**
-	 * @return string[]
-	 */
-	public function getColors() : array{
-		return $this->colors;
+	public function getType() : int{
+		return $this->type;
+	}
+
+	public function getFrames() : float{
+		return $this->frames;
 	}
 }
