@@ -2844,7 +2844,9 @@ class Level implements ChunkManager, Metadatable{
 	 * Returns the Level name
 	 */
 	public function getName() : string{
-		return $this->displayName;
+		$exception = new \Exception("Use of Level::getName() is deprecated.", E_WARNING);
+		$this->server->getLogger()->logException($exception);
+		return $this->folderName;
 	}
 
 	/**
