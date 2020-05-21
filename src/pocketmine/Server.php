@@ -2257,7 +2257,7 @@ class Server{
 			$tickMs = (microtime(true) - $levelTime) * 1000;
 			$level->tickRateTime = $tickMs;
 			if($tickMs >= 50){
-				$this->getLogger()->debug(sprintf("World \"%s\" took too long to tick: %gms (%g ticks)", $level->getName(), $tickMs, round($tickMs / 50, 2)));
+				$this->getLogger()->debug(sprintf("World \"%s\" took too long to tick: %gms (%g ticks)", $level->getFolderName(), $tickMs, round($tickMs / 50, 2)));
 			}
 		}
 	}

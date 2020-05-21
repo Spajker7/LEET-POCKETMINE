@@ -1857,7 +1857,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		if(isset($packet->clientData["SkinData"])){
 			$data = base64_decode($packet->clientData["SkinData"]);
 			if(isset($packet->clientData["SkinImageWidth"], $packet->clientData["SkinImageHeight"])){
-				$skinData = new SerializedImage((int) $packet->clientData['SkinImageHeight'], (int) $packet->clientData['SkinImageWidth'], $data);
+				$skinData = new SerializedImage((int) $packet->clientData['SkinImageWidth'], (int) $packet->clientData['SkinImageHeight'], $data);
 			}else{
 				$skinData = SerializedImage::fromLegacy(base64_decode($data));
 			}
@@ -1875,8 +1875,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		}else{
 			$capeData = SerializedImage::null();
 		}
-
-		var_dump($packet->clientData);
 
 		$animations = [];
 		if(isset($packet->clientData["AnimatedImageData"])){
@@ -2201,7 +2199,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$this->ip,
 			$this->port,
 			$this->id,
-			$this->level->getName(),
+			$this->level->getFolderName(),
 			round($this->x, 4),
 			round($this->y, 4),
 			round($this->z, 4)

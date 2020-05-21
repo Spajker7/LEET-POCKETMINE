@@ -607,7 +607,7 @@ class Level implements ChunkManager, Metadatable{
 			return false;
 		}
 
-		$this->server->getLogger()->info($this->server->getLanguage()->translateString("pocketmine.level.unloading", [$this->getName()]));
+		$this->server->getLogger()->info($this->server->getLanguage()->translateString("pocketmine.level.unloading", [$this->getFolderName()]));
 		$defaultLevel = $this->server->getDefaultLevel();
 		foreach($this->getPlayers() as $player){
 			if($this === $defaultLevel or $defaultLevel === null){
@@ -2844,8 +2844,6 @@ class Level implements ChunkManager, Metadatable{
 	 * Returns the Level name
 	 */
 	public function getName() : string{
-		$exception = new \Exception("Use of Level::getName() is deprecated.", E_WARNING);
-		$this->server->getLogger()->logException($exception);
 		return $this->folderName;
 	}
 
