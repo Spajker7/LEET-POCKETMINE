@@ -39,6 +39,8 @@ class ShapedRecipe implements CraftingRecipe{
 	private $ingredientList = [];
 	/** @var Item[] */
 	private $results = [];
+	/** @var int */
+	private $networkId;
 
 	/** @var int */
 	private $height;
@@ -92,6 +94,16 @@ class ShapedRecipe implements CraftingRecipe{
 		}
 
 		$this->results = array_map(function(Item $item) : Item{ return clone $item; }, $results);
+	}
+
+	public function getNetworkId(): int
+	{
+		return $this->networkId;
+	}
+
+	public function setNetworkId(int $networkId): void
+	{
+		$this->networkId = $networkId;
 	}
 
 	public function getWidth() : int{

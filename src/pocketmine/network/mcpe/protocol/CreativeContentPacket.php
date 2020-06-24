@@ -27,31 +27,31 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\NetworkSession;
+use function count;
 
-class InventorySlotPacket extends DataPacket{
-	public const NETWORK_ID = ProtocolInfo::INVENTORY_SLOT_PACKET;
+class CreativeContentPacket extends DataPacket{
+	public const NETWORK_ID = ProtocolInfo::CREATIVE_CONTENT_PACKET;
 
-	/** @var int */
-	public $windowId;
-	/** @var int */
-	public $inventorySlot;
-	/** @var Item */
-	public $item;
+	/** @var Item[] */
+	public $items = [];
 
 	protected function decodePayload(){
-		$this->windowId = $this->getUnsignedVarInt();
-		$this->inventorySlot = $this->getUnsignedVarInt();
-		$this->item = $this->getSlot();
+		for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; ++$i){
+			$creativeNetworkId = $this->getUnsignedVarInt();
+			$this->items[] = $item = $this->getSlot();
+		}
 	}
 
 	protected function encodePayload(){
-		$this->putUnsignedVarInt($this->windowId);
-		$this->putUnsignedVarInt($this->inventorySlot);
-		$this->putVarInt($this->item->isNull() ? 0 : 1);
-		$this->putSlot($this->item);
+		$this->putUnsignedVarInt(count($this->items));
+		$count = 0;
+		foreach($this->items as $item){
+			$this->putUnsignedVarInt($count++);
+			$this->putSlot($item);
+		}
 	}
 
 	public function handle(NetworkSession $session) : bool{
-		return $session->handleInventorySlot($this);
+		return $session->handleCreativeContent($this);
 	}
 }

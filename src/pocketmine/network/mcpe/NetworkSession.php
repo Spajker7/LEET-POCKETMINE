@@ -741,4 +741,13 @@ abstract class NetworkSession{
 	public function handlePlayerAuthInput(PlayerAuthInputPacket $packet) : bool{
 		return false;
 	}
+
+    public function handlePacketViolationWarning(protocol\PacketViolationWarningPacket $param) : bool{
+    	return false;
+    }
+
+	public function handleCreativeContent(protocol\CreativeContentPacket $param)
+	{
+		return false;
+	}
 }

@@ -49,6 +49,7 @@ class InventoryContentPacket extends DataPacket{
 		$this->putUnsignedVarInt($this->windowId);
 		$this->putUnsignedVarInt(count($this->items));
 		foreach($this->items as $item){
+			$this->putVarInt($item->isNull() ? 0 : 1);
 			$this->putSlot($item);
 		}
 	}

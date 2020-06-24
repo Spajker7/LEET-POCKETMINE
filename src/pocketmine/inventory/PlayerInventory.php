@@ -26,6 +26,7 @@ namespace pocketmine\inventory;
 use pocketmine\entity\Human;
 use pocketmine\event\player\PlayerItemHeldEvent;
 use pocketmine\item\Item;
+use pocketmine\network\mcpe\protocol\CreativeContentPacket;
 use pocketmine\network\mcpe\protocol\InventoryContentPacket;
 use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
 use pocketmine\network\mcpe\protocol\types\ContainerIds;
@@ -196,8 +197,7 @@ class PlayerInventory extends BaseInventory{
 		if(!($holder instanceof Player)){
 			throw new \LogicException("Cannot send creative inventory contents to non-player inventory holder");
 		}
-		$pk = new InventoryContentPacket();
-		$pk->windowId = ContainerIds::CREATIVE;
+		$pk = new CreativeContentPacket();
 
 		if(!$holder->isSpectator()){ //fill it for all gamemodes except spectator
 			foreach(Item::getCreativeItems() as $i => $item){

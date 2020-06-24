@@ -63,6 +63,10 @@ class StartGamePacket extends DataPacket{
 	/** @var int */
 	public $seed;
 	/** @var int */
+	public $spawnBiomeType;
+	/** @var string */
+	public $spawnBiomeName;
+	/** @var int */
 	public $dimension;
 	/** @var int */
 	public $generator = 1; //default infinite - 0 old, 1 infinite, 2 flat
@@ -84,6 +88,8 @@ class StartGamePacket extends DataPacket{
 	public $eduEditionOffer = 0;
 	/** @var bool */
 	public $hasEduFeaturesEnabled = false;
+	/** @var string */
+	public $eduProductID;
 	/** @var float */
 	public $rainLevel;
 	/** @var float */
@@ -136,6 +142,14 @@ class StartGamePacket extends DataPacket{
 
 	/** @var string */
 	public $vanillaVersion = ProtocolInfo::MINECRAFT_VERSION_NETWORK;
+	/** @var int */
+	public $limitedWorldWidth;
+	/** @var int */
+	public $limitedWorldDepth;
+	/** @var bool */
+	public $isNewNether;
+	/** @var bool */
+	public $forceExperimentalGameplay;
 	/** @var string */
 	public $levelId = ""; //base64 string, usually the same as world folder name in vanilla
 	/** @var string */
@@ -152,6 +166,8 @@ class StartGamePacket extends DataPacket{
 	public $enchantmentSeed = 0;
 	/** @var string */
 	public $multiplayerCorrelationId = ""; //TODO: this should be filled with a UUID of some sort
+	/** @var bool */
+	public $isInventoryServerAuthoritative = false;
 
 	/** @var ListTag|null */
 	public $blockTable = null;
@@ -173,6 +189,8 @@ class StartGamePacket extends DataPacket{
 
 		//Level settings
 		$this->seed = $this->getVarInt();
+		$this->spawnBiomeType = $this->getLShort();
+		$this->spawnBiomeName = $this->getString();
 		$this->dimension = $this->getVarInt();
 		$this->generator = $this->getVarInt();
 		$this->worldGamemode = $this->getVarInt();
@@ -182,6 +200,7 @@ class StartGamePacket extends DataPacket{
 		$this->time = $this->getVarInt();
 		$this->eduEditionOffer = $this->getVarInt();
 		$this->hasEduFeaturesEnabled = $this->getBool();
+		$this->eduProductID = $this->getString();
 		$this->rainLevel = $this->getLFloat();
 		$this->lightningLevel = $this->getLFloat();
 		$this->hasConfirmedPlatformLockedContent = $this->getBool();
@@ -205,6 +224,10 @@ class StartGamePacket extends DataPacket{
 		$this->onlySpawnV1Villagers = $this->getBool();
 
 		$this->vanillaVersion = $this->getString();
+		$this->limitedWorldWidth = $this->getLInt();
+		$this->limitedWorldDepth = $this->getLInt();
+		$this->isNewNether = $this->getBool();
+		$this->forceExperimentalGameplay = $this->getBool();
 		$this->levelId = $this->getString();
 		$this->worldName = $this->getString();
 		$this->premiumWorldTemplateId = $this->getString();
@@ -229,6 +252,7 @@ class StartGamePacket extends DataPacket{
 		}
 
 		$this->multiplayerCorrelationId = $this->getString();
+		$this->isInventoryServerAuthoritative = $this->getBool();
 	}
 
 	protected function encodePayload(){
@@ -243,6 +267,8 @@ class StartGamePacket extends DataPacket{
 
 		//Level settings
 		$this->putVarInt($this->seed);
+		$this->putLShort($this->spawnBiomeType);
+		$this->putString($this->spawnBiomeName);
 		$this->putVarInt($this->dimension);
 		$this->putVarInt($this->generator);
 		$this->putVarInt($this->worldGamemode);
@@ -252,6 +278,7 @@ class StartGamePacket extends DataPacket{
 		$this->putVarInt($this->time);
 		$this->putVarInt($this->eduEditionOffer);
 		$this->putBool($this->hasEduFeaturesEnabled);
+		$this->putString($this->eduProductID);
 		$this->putLFloat($this->rainLevel);
 		$this->putLFloat($this->lightningLevel);
 		$this->putBool($this->hasConfirmedPlatformLockedContent);
@@ -275,6 +302,10 @@ class StartGamePacket extends DataPacket{
 		$this->putBool($this->onlySpawnV1Villagers);
 
 		$this->putString($this->vanillaVersion);
+		$this->putLInt($this->limitedWorldWidth);
+		$this->putLInt($this->limitedWorldDepth);
+		$this->putBool($this->isNewNether);
+		$this->putBool($this->forceExperimentalGameplay);
 		$this->putString($this->levelId);
 		$this->putString($this->worldName);
 		$this->putString($this->premiumWorldTemplateId);
@@ -303,6 +334,7 @@ class StartGamePacket extends DataPacket{
 		}
 
 		$this->putString($this->multiplayerCorrelationId);
+		$this->putBool($this->isInventoryServerAuthoritative);
 	}
 
 	/**

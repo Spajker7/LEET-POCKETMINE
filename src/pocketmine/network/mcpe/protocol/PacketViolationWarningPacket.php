@@ -25,33 +25,41 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-use pocketmine\item\Item;
 use pocketmine\network\mcpe\NetworkSession;
 
-class InventorySlotPacket extends DataPacket{
-	public const NETWORK_ID = ProtocolInfo::INVENTORY_SLOT_PACKET;
+class PacketViolationWarningPacket extends DataPacket{
+	public const NETWORK_ID = ProtocolInfo::PACKET_VIOLATION_WARNING_PACKET;
+
+	public const TYPE_MALFORMED = 0;
+
+	public const SEVERITY_WARNING = 0;
+	public const SEVERITY_FINAL_WARNING = 1;
+	public const SEVERITY_TERMINATING_CONNECTION = 2;
 
 	/** @var int */
-	public $windowId;
+	public $type;
 	/** @var int */
-	public $inventorySlot;
-	/** @var Item */
-	public $item;
+	public $severity;
+	/** @var int */
+	public $packetId;
+	/** @var string */
+	public $context;
 
 	protected function decodePayload(){
-		$this->windowId = $this->getUnsignedVarInt();
-		$this->inventorySlot = $this->getUnsignedVarInt();
-		$this->item = $this->getSlot();
+		$this->type = $this->getVarInt();
+		$this->severity = $this->getVarInt();
+		$this->packetId = $this->getVarInt();
+		$this->context = $this->getString();
 	}
 
 	protected function encodePayload(){
-		$this->putUnsignedVarInt($this->windowId);
-		$this->putUnsignedVarInt($this->inventorySlot);
-		$this->putVarInt($this->item->isNull() ? 0 : 1);
-		$this->putSlot($this->item);
+		$this->putVarInt($this->type);
+		$this->putVarInt($this->severity);
+		$this->putVarInt($this->packetId);
+		$this->putString($this->context);
 	}
 
 	public function handle(NetworkSession $session) : bool{
-		return $session->handleInventorySlot($this);
+		return $session->handlePacketViolationWarning($this);
 	}
 }

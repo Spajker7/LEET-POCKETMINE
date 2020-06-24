@@ -52,6 +52,14 @@ class InventoryTransactionPacket extends DataPacket{
 	/** @var int */
 	public $transactionType;
 
+	/** @var int */
+	public $legacyRequestID = 0;
+
+	public $legacySetItemSlots = [];
+
+	/** @var bool */
+	public $hasNetworkIDs = false;
+
 	/**
 	 * @var bool
 	 * NOTE: THIS FIELD DOES NOT EXIST IN THE PROTOCOL, it's merely used for convenience for PocketMine-MP to easily
@@ -72,16 +80,32 @@ class InventoryTransactionPacket extends DataPacket{
 	public $trData;
 
 	protected function decodePayload(){
+		$this->legacyRequestID = $this->getVarInt();
+
+		if($this->legacyRequestID !== 0) {
+
+			$len = $this->getUnsignedVarInt();
+
+			for($i = 0; $i < $len; $i++) {
+				$this->getByte();
+				$len2 = $this->getUnsignedVarInt();
+
+				for($j = 0; $j < $len2; $j++) {
+					$this->getByte();
+				}
+			}
+		}
+
 		$this->transactionType = $this->getUnsignedVarInt();
+
+		$this->hasNetworkIDs = $this->getBool();
 
 		for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; ++$i){
 			$this->actions[] = $action = (new NetworkInventoryAction())->read($this);
 
 			if(
-				$action->sourceType === NetworkInventoryAction::SOURCE_CONTAINER and
-				$action->windowId === ContainerIds::UI and
-				$action->inventorySlot === 50 and
-				!$action->oldItem->equalsExact($action->newItem)
+				$action->sourceType === NetworkInventoryAction::SOURCE_TODO and
+				$action->windowId === NetworkInventoryAction::SOURCE_TYPE_CRAFTING_RESULT
 			){
 				$this->isCraftingPart = true;
 				if(!$action->oldItem->isNull() and $action->newItem->isNull()){

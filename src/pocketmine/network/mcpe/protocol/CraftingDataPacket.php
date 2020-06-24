@@ -193,6 +193,7 @@ class CraftingDataPacket extends DataPacket{
 		$stream->put(str_repeat("\x00", 16)); //Null UUID
 		$stream->putString("crafting_table"); //TODO: blocktype (no prefix) (this might require internal API breaks)
 		$stream->putVarInt(50); //TODO: priority
+		$stream->putUnsignedVarInt($recipe->getNetworkId());
 
 		return CraftingDataPacket::ENTRY_SHAPELESS;
 	}
@@ -217,6 +218,7 @@ class CraftingDataPacket extends DataPacket{
 		$stream->put(str_repeat("\x00", 16)); //Null UUID
 		$stream->putString("crafting_table"); //TODO: blocktype (no prefix) (this might require internal API breaks)
 		$stream->putVarInt(50); //TODO: priority
+		$stream->putUnsignedVarInt($recipe->getNetworkId());
 
 		return CraftingDataPacket::ENTRY_SHAPED;
 	}

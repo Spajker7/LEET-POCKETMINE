@@ -108,6 +108,10 @@ class NetworkInventoryAction{
 		$this->oldItem = $packet->getSlot();
 		$this->newItem = $packet->getSlot();
 
+		if($packet->hasNetworkIDs) {
+			$networkId = $packet->getVarInt();
+		}
+
 		return $this;
 	}
 
@@ -136,6 +140,11 @@ class NetworkInventoryAction{
 		$packet->putUnsignedVarInt($this->inventorySlot);
 		$packet->putSlot($this->oldItem);
 		$packet->putSlot($this->newItem);
+
+		if($packet->hasNetworkIDs) {
+			$networkId = $this->newItem->isNull() ? 0 : 1;
+			$packet->putVarInt($networkId);
+		}
 	}
 
 	/**

@@ -71,7 +71,7 @@ class BatchPacket extends DataPacket{
 	}
 
 	protected function encodePayload(){
-		$this->put(zlib_encode($this->payload, ZLIB_ENCODING_DEFLATE, $this->compressionLevel));
+		$this->put(zlib_encode($this->payload, ZLIB_ENCODING_RAW, $this->compressionLevel));
 	}
 
 	/**

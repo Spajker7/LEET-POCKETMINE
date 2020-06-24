@@ -114,6 +114,7 @@ use pocketmine\network\mcpe\protocol\BlockPickRequestPacket;
 use pocketmine\network\mcpe\protocol\BookEditPacket;
 use pocketmine\network\mcpe\protocol\ChunkRadiusUpdatedPacket;
 use pocketmine\network\mcpe\protocol\ContainerClosePacket;
+use pocketmine\network\mcpe\protocol\ContainerOpenPacket;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\DisconnectPacket;
 use pocketmine\network\mcpe\protocol\InteractPacket;
@@ -2167,6 +2168,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->pitch = $this->pitch;
 		$pk->yaw = $this->yaw;
 		$pk->seed = -1;
+		$pk->spawnBiomeType = 0;
+		$pk->spawnBiomeName = "";
 		$pk->dimension = DimensionIds::OVERWORLD; //TODO: implement this properly
 		$pk->worldGamemode = Player::getClientFriendlyGamemode($this->server->getGamemode());
 		$pk->difficulty = $this->level->getDifficulty();
@@ -2176,11 +2179,19 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->hasAchievementsDisabled = true;
 		$pk->time = $this->level->getTime();
 		$pk->eduEditionOffer = 0;
+		$pk->eduProductID = "";
 		$pk->rainLevel = 0; //TODO: implement these properly
 		$pk->lightningLevel = 0;
 		$pk->commandsEnabled = true;
 		$pk->levelId = "";
 		$pk->worldName = $this->server->getMotd();
+
+		$pk->limitedWorldWidth = 0;
+		$pk->limitedWorldDepth = 0;
+		$pk->isNewNether = false;
+		$pk->forceExperimentalGameplay = false;
+		$pk->isInventoryServerAuthoritative = false;
+
 		$this->dataPacket($pk);
 
 		$this->sendDataPacket(new AvailableActorIdentifiersPacket());
@@ -2742,6 +2753,14 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			case InteractPacket::ACTION_LEAVE_VEHICLE:
 			case InteractPacket::ACTION_MOUSEOVER:
 				break; //TODO: handle these
+			case InteractPacket::ACTION_OPEN_INVENTORY:
+				$pk = new ContainerOpenPacket();
+				$pk->windowId = ContainerIds::INVENTORY;
+				$pk->type = -1;
+				$pk->x = $pk->y = $pk->z = 0;
+				$pk->entityUniqueId = -1;
+				$this->dataPacket($pk);
+				break;
 			default:
 				$this->server->getLogger()->debug("Unhandled/unknown interaction type " . $packet->action . "received from " . $this->getName());
 
@@ -2955,7 +2974,14 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	}
 
 	public function handleContainerClose(ContainerClosePacket $packet) : bool{
-		if(!$this->spawned or $packet->windowId === 0){
+		if(!$this->spawned){
+			return true;
+		}
+
+		if($packet->windowId === ContainerIds::INVENTORY) {
+			$pk = new ContainerClosePacket();
+			$pk->windowId = ContainerIds::INVENTORY;
+			$this->dataPacket($pk);
 			return true;
 		}
 
