@@ -168,7 +168,7 @@ interface ProtocolInfo{
 	public const LEVEL_SOUND_EVENT_PACKET = 0x7b;
 	public const LEVEL_EVENT_GENERIC_PACKET = 0x7c;
 	public const LECTERN_UPDATE_PACKET = 0x7d;
-	public const VIDEO_STREAM_CONNECT_PACKET = 0x7e;
+
 	public const ADD_ENTITY_PACKET = 0x7f;
 	public const REMOVE_ENTITY_PACKET = 0x80;
 	public const CLIENT_CACHE_STATUS_PACKET = 0x81;
@@ -195,8 +195,9 @@ interface ProtocolInfo{
 	public const CODE_BUILDER_PACKET = 0x96;
 	public const UPDATE_PLAYER_GAME_TYPE_PACKET = 0x97;
 	public const EMOTE_LIST_PACKET = 0x98;
-	public const POSITION_TRACKING_DB_SERVER_BROADCAST_PACKET = 0x99;
-	public const POSITION_TRACKING_DB_CLIENT_REQUEST_PACKET = 0x9a;
+	public const POSITION_TRACKING_D_B_SERVER_BROADCAST_PACKET = 0x99;
+	public const POSITION_TRACKING_D_B_CLIENT_REQUEST_PACKET = 0x9a;
 	public const DEBUG_INFO_PACKET = 0x9b;
 	public const PACKET_VIOLATION_WARNING_PACKET = 0x9c;
+
 }

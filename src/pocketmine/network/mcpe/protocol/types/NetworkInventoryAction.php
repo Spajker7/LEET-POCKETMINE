@@ -29,7 +29,7 @@ use pocketmine\inventory\transaction\action\DropItemAction;
 use pocketmine\inventory\transaction\action\InventoryAction;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\Item;
-use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
+use pocketmine\network\mcpe\NetworkBinaryStream;
 use pocketmine\Player;
 
 class NetworkInventoryAction{
@@ -81,11 +81,13 @@ class NetworkInventoryAction{
 	public $oldItem;
 	/** @var Item */
 	public $newItem;
+	/** @var int|null */
+	public $newItemStackId = null;
 
 	/**
 	 * @return $this
 	 */
-	public function read(InventoryTransactionPacket $packet){
+	public function read(NetworkBinaryStream $packet, bool $hasItemStackIds){
 		$this->sourceType = $packet->getUnsignedVarInt();
 
 		switch($this->sourceType){
@@ -107,9 +109,8 @@ class NetworkInventoryAction{
 		$this->inventorySlot = $packet->getUnsignedVarInt();
 		$this->oldItem = $packet->getSlot();
 		$this->newItem = $packet->getSlot();
-
-		if($packet->hasNetworkIDs) {
-			$networkId = $packet->getVarInt();
+		if($hasItemStackIds){
+			$this->newItemStackId = $packet->readGenericTypeNetworkId();
 		}
 
 		return $this;
@@ -118,7 +119,7 @@ class NetworkInventoryAction{
 	/**
 	 * @return void
 	 */
-	public function write(InventoryTransactionPacket $packet){
+	public function write(NetworkBinaryStream $packet, bool $hasItemStackIds){
 		$packet->putUnsignedVarInt($this->sourceType);
 
 		switch($this->sourceType){
@@ -140,10 +141,11 @@ class NetworkInventoryAction{
 		$packet->putUnsignedVarInt($this->inventorySlot);
 		$packet->putSlot($this->oldItem);
 		$packet->putSlot($this->newItem);
-
-		if($packet->hasNetworkIDs) {
-			$networkId = $this->newItem->isNull() ? 0 : 1;
-			$packet->putVarInt($networkId);
+		if($hasItemStackIds){
+			if($this->newItemStackId === null){
+				throw new \InvalidStateException("Item stack ID for newItem must be provided");
+			}
+			$packet->writeGenericTypeNetworkId($this->newItemStackId);
 		}
 	}
 

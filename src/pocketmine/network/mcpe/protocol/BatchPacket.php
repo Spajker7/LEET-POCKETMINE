@@ -32,6 +32,7 @@ use function get_class;
 use function strlen;
 use function zlib_decode;
 use function zlib_encode;
+use const ZLIB_ENCODING_RAW;
 #ifndef COMPILE
 use pocketmine\utils\Binary;
 #endif

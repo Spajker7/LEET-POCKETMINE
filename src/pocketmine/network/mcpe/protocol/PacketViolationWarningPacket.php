@@ -27,7 +27,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\NetworkSession;
 
-class PacketViolationWarningPacket extends DataPacket{
+class PacketViolationWarningPacket extends DataPacket/* implements ServerboundPacket*/{
 	public const NETWORK_ID = ProtocolInfo::PACKET_VIOLATION_WARNING_PACKET;
 
 	public const TYPE_MALFORMED = 0;
@@ -37,29 +37,48 @@ class PacketViolationWarningPacket extends DataPacket{
 	public const SEVERITY_TERMINATING_CONNECTION = 2;
 
 	/** @var int */
-	public $type;
+	private $type;
 	/** @var int */
-	public $severity;
+	private $severity;
 	/** @var int */
-	public $packetId;
+	private $packetId;
 	/** @var string */
-	public $context;
+	private $message;
 
-	protected function decodePayload(){
+	public static function create(int $type, int $severity, int $packetId, string $message) : self{
+		$result = new self;
+
+		$result->type = $type;
+		$result->severity = $severity;
+		$result->packetId = $packetId;
+		$result->message = $message;
+
+		return $result;
+	}
+
+	public function getType() : int{ return $this->type; }
+
+	public function getSeverity() : int{ return $this->severity; }
+
+	public function getPacketId() : int{ return $this->packetId; }
+
+	public function getMessage() : string{ return $this->message; }
+
+	protected function decodePayload() : void{
 		$this->type = $this->getVarInt();
 		$this->severity = $this->getVarInt();
 		$this->packetId = $this->getVarInt();
-		$this->context = $this->getString();
+		$this->message = $this->getString();
 	}
 
-	protected function encodePayload(){
+	protected function encodePayload() : void{
 		$this->putVarInt($this->type);
 		$this->putVarInt($this->severity);
 		$this->putVarInt($this->packetId);
-		$this->putString($this->context);
+		$this->putString($this->message);
 	}
 
-	public function handle(NetworkSession $session) : bool{
-		return $session->handlePacketViolationWarning($this);
+	public function handle(NetworkSession $handler) : bool{
+		return $handler->handlePacketViolationWarning($this);
 	}
 }

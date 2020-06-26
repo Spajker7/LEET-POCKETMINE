@@ -25,6 +25,7 @@ namespace pocketmine {
 
 	use pocketmine\utils\Git;
 	use pocketmine\utils\MainLogger;
+	use pocketmine\utils\Process;
 	use pocketmine\utils\ServerKiller;
 	use pocketmine\utils\Terminal;
 	use pocketmine\utils\Timezone;
@@ -34,7 +35,7 @@ namespace pocketmine {
 
 	require_once __DIR__ . '/VersionInfo.php';
 
-	const MIN_PHP_VERSION = "7.2.0";
+	const MIN_PHP_VERSION = "7.3.0";
 
 	/**
 	 * @param string $message
@@ -279,7 +280,7 @@ namespace pocketmine {
 
 			if(ThreadManager::getInstance()->stopAll() > 0){
 				$logger->debug("Some threads could not be stopped, performing a force-kill");
-				Utils::kill(getmypid());
+				Process::kill(getmypid());
 			}
 		}while(false);
 
@@ -287,6 +288,14 @@ namespace pocketmine {
 		$logger->join();
 
 		echo Terminal::$FORMAT_RESET . PHP_EOL;
+
+		if(!flock(\pocketmine\LOCK_FILE, LOCK_UN)){
+			critical_error("Failed to release the server.lock file.");
+		}
+
+		if(!fclose(\pocketmine\LOCK_FILE)){
+			critical_error("Could not close server.lock resource.");
+		}
 
 		exit($exitCode);
 	}

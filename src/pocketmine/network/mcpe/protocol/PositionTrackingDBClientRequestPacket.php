@@ -27,40 +27,38 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\NetworkSession;
 
-class VideoStreamConnectPacket extends DataPacket/* implements ClientboundPacket*/{
-	public const NETWORK_ID = ProtocolInfo::VIDEO_STREAM_CONNECT_PACKET;
+class PositionTrackingDBClientRequestPacket extends DataPacket/* implements ServerboundPacket*/{
+	public const NETWORK_ID = ProtocolInfo::POSITION_TRACKING_D_B_CLIENT_REQUEST_PACKET;
 
-	public const ACTION_CONNECT = 0;
-	public const ACTION_DISCONNECT = 1;
+	public const ACTION_QUERY = 0;
 
-	/** @var string */
-	public $serverUri;
-	/** @var float */
-	public $frameSendFrequency;
 	/** @var int */
-	public $action;
+	private $action;
 	/** @var int */
-	public $resolutionX;
-	/** @var int */
-	public $resolutionY;
+	private $trackingId;
+
+	public static function create(int $action, int $trackingId) : self{
+		$result = new self;
+		$result->action = $action;
+		$result->trackingId = $trackingId;
+		return $result;
+	}
+
+	public function getAction() : int{ return $this->action; }
+
+	public function getTrackingId() : int{ return $this->trackingId; }
 
 	protected function decodePayload() : void{
-		$this->serverUri = $this->getString();
-		$this->frameSendFrequency = $this->getLFloat();
 		$this->action = $this->getByte();
-		$this->resolutionX = $this->getLInt();
-		$this->resolutionY = $this->getLInt();
+		$this->trackingId = $this->getVarInt();
 	}
 
 	protected function encodePayload() : void{
-		$this->putString($this->serverUri);
-		$this->putLFloat($this->frameSendFrequency);
 		$this->putByte($this->action);
-		$this->putLInt($this->resolutionX);
-		$this->putLInt($this->resolutionY);
+		$this->putVarInt($this->trackingId);
 	}
 
-	public function handle(NetworkSession $session) : bool{
-		return $session->handleVideoStreamConnect($this);
+	public function handle(NetworkSession $handler) : bool{
+		return $handler->handlePositionTrackingDBClientRequest($this);
 	}
 }

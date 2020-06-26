@@ -28,10 +28,15 @@ namespace pocketmine\network\mcpe\protocol;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\NetworkBinaryStream;
 use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\network\mcpe\protocol\types\EducationEditionOffer;
+use pocketmine\network\mcpe\protocol\types\GameRuleType;
+use pocketmine\network\mcpe\protocol\types\GeneratorType;
+use pocketmine\network\mcpe\protocol\types\MultiplayerGameVisibility;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
-use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping;
+use pocketmine\network\mcpe\protocol\types\SpawnSettings;
 use function count;
 use function file_get_contents;
 use function json_decode;
@@ -62,14 +67,10 @@ class StartGamePacket extends DataPacket{
 
 	/** @var int */
 	public $seed;
+	/** @var SpawnSettings */
+	public $spawnSettings;
 	/** @var int */
-	public $spawnBiomeType;
-	/** @var string */
-	public $spawnBiomeName;
-	/** @var int */
-	public $dimension;
-	/** @var int */
-	public $generator = 1; //default infinite - 0 old, 1 infinite, 2 flat
+	public $generator = GeneratorType::OVERWORLD;
 	/** @var int */
 	public $worldGamemode;
 	/** @var int */
@@ -85,11 +86,11 @@ class StartGamePacket extends DataPacket{
 	/** @var int */
 	public $time = -1;
 	/** @var int */
-	public $eduEditionOffer = 0;
+	public $eduEditionOffer = EducationEditionOffer::NONE;
 	/** @var bool */
 	public $hasEduFeaturesEnabled = false;
 	/** @var string */
-	public $eduProductID;
+	public $eduProductUUID = "";
 	/** @var float */
 	public $rainLevel;
 	/** @var float */
@@ -101,9 +102,9 @@ class StartGamePacket extends DataPacket{
 	/** @var bool */
 	public $hasLANBroadcast = true;
 	/** @var int */
-	public $xboxLiveBroadcastMode = 0; //TODO: find values
+	public $xboxLiveBroadcastMode = MultiplayerGameVisibility::PUBLIC;
 	/** @var int */
-	public $platformBroadcastMode = 0;
+	public $platformBroadcastMode = MultiplayerGameVisibility::PUBLIC;
 	/** @var bool */
 	public $commandsEnabled;
 	/** @var bool */
@@ -113,7 +114,7 @@ class StartGamePacket extends DataPacket{
 	 * @phpstan-var array<string, array{0: int, 1: bool|int|float}>
 	 */
 	public $gameRules = [ //TODO: implement this
-		"naturalregeneration" => [1, false] //Hack for client side regeneration
+		"naturalregeneration" => [GameRuleType::BOOL, false] //Hack for client side regeneration
 	];
 	/** @var bool */
 	public $hasBonusChestEnabled = false;
@@ -139,17 +140,17 @@ class StartGamePacket extends DataPacket{
 	public $isWorldTemplateOptionLocked = false;
 	/** @var bool */
 	public $onlySpawnV1Villagers = false;
-
 	/** @var string */
 	public $vanillaVersion = ProtocolInfo::MINECRAFT_VERSION_NETWORK;
 	/** @var int */
-	public $limitedWorldWidth;
+	public $limitedWorldWidth = 0;
 	/** @var int */
-	public $limitedWorldDepth;
+	public $limitedWorldLength = 0;
 	/** @var bool */
-	public $isNewNether;
-	/** @var bool */
-	public $forceExperimentalGameplay;
+	public $isNewNether = true;
+	/** @var bool|null */
+	public $experimentalGameplayOverride = null;
+
 	/** @var string */
 	public $levelId = ""; //base64 string, usually the same as world folder name in vanilla
 	/** @var string */
@@ -166,8 +167,6 @@ class StartGamePacket extends DataPacket{
 	public $enchantmentSeed = 0;
 	/** @var string */
 	public $multiplayerCorrelationId = ""; //TODO: this should be filled with a UUID of some sort
-	/** @var bool */
-	public $isInventoryServerAuthoritative = false;
 
 	/** @var ListTag|null */
 	public $blockTable = null;
@@ -176,6 +175,8 @@ class StartGamePacket extends DataPacket{
 	 * @phpstan-var array<string, int>|null
 	 */
 	public $itemTable = null;
+	/** @var bool */
+	public $enableNewInventorySystem = false; //TODO
 
 	protected function decodePayload(){
 		$this->entityUniqueId = $this->getEntityUniqueId();
@@ -189,9 +190,7 @@ class StartGamePacket extends DataPacket{
 
 		//Level settings
 		$this->seed = $this->getVarInt();
-		$this->spawnBiomeType = $this->getLShort();
-		$this->spawnBiomeName = $this->getString();
-		$this->dimension = $this->getVarInt();
+		$this->spawnSettings = SpawnSettings::read($this);
 		$this->generator = $this->getVarInt();
 		$this->worldGamemode = $this->getVarInt();
 		$this->difficulty = $this->getVarInt();
@@ -200,7 +199,7 @@ class StartGamePacket extends DataPacket{
 		$this->time = $this->getVarInt();
 		$this->eduEditionOffer = $this->getVarInt();
 		$this->hasEduFeaturesEnabled = $this->getBool();
-		$this->eduProductID = $this->getString();
+		$this->eduProductUUID = $this->getString();
 		$this->rainLevel = $this->getLFloat();
 		$this->lightningLevel = $this->getLFloat();
 		$this->hasConfirmedPlatformLockedContent = $this->getBool();
@@ -222,12 +221,16 @@ class StartGamePacket extends DataPacket{
 		$this->isFromWorldTemplate = $this->getBool();
 		$this->isWorldTemplateOptionLocked = $this->getBool();
 		$this->onlySpawnV1Villagers = $this->getBool();
-
 		$this->vanillaVersion = $this->getString();
 		$this->limitedWorldWidth = $this->getLInt();
-		$this->limitedWorldDepth = $this->getLInt();
+		$this->limitedWorldLength = $this->getLInt();
 		$this->isNewNether = $this->getBool();
-		$this->forceExperimentalGameplay = $this->getBool();
+		if($this->getBool()){
+			$this->experimentalGameplayOverride = $this->getBool();
+		}else{
+			$this->experimentalGameplayOverride = null;
+		}
+
 		$this->levelId = $this->getString();
 		$this->worldName = $this->getString();
 		$this->premiumWorldTemplateId = $this->getString();
@@ -252,7 +255,7 @@ class StartGamePacket extends DataPacket{
 		}
 
 		$this->multiplayerCorrelationId = $this->getString();
-		$this->isInventoryServerAuthoritative = $this->getBool();
+		$this->enableNewInventorySystem = $this->getBool();
 	}
 
 	protected function encodePayload(){
@@ -267,9 +270,7 @@ class StartGamePacket extends DataPacket{
 
 		//Level settings
 		$this->putVarInt($this->seed);
-		$this->putLShort($this->spawnBiomeType);
-		$this->putString($this->spawnBiomeName);
-		$this->putVarInt($this->dimension);
+		$this->spawnSettings->write($this);
 		$this->putVarInt($this->generator);
 		$this->putVarInt($this->worldGamemode);
 		$this->putVarInt($this->difficulty);
@@ -278,7 +279,7 @@ class StartGamePacket extends DataPacket{
 		$this->putVarInt($this->time);
 		$this->putVarInt($this->eduEditionOffer);
 		$this->putBool($this->hasEduFeaturesEnabled);
-		$this->putString($this->eduProductID);
+		$this->putString($this->eduProductUUID);
 		$this->putLFloat($this->rainLevel);
 		$this->putLFloat($this->lightningLevel);
 		$this->putBool($this->hasConfirmedPlatformLockedContent);
@@ -300,12 +301,15 @@ class StartGamePacket extends DataPacket{
 		$this->putBool($this->isFromWorldTemplate);
 		$this->putBool($this->isWorldTemplateOptionLocked);
 		$this->putBool($this->onlySpawnV1Villagers);
-
 		$this->putString($this->vanillaVersion);
 		$this->putLInt($this->limitedWorldWidth);
-		$this->putLInt($this->limitedWorldDepth);
+		$this->putLInt($this->limitedWorldLength);
 		$this->putBool($this->isNewNether);
-		$this->putBool($this->forceExperimentalGameplay);
+		$this->putBool($this->experimentalGameplayOverride !== null);
+		if($this->experimentalGameplayOverride !== null){
+			$this->putBool($this->experimentalGameplayOverride);
+		}
+
 		$this->putString($this->levelId);
 		$this->putString($this->worldName);
 		$this->putString($this->premiumWorldTemplateId);
@@ -334,7 +338,7 @@ class StartGamePacket extends DataPacket{
 		}
 
 		$this->putString($this->multiplayerCorrelationId);
-		$this->putBool($this->isInventoryServerAuthoritative);
+		$this->putBool($this->enableNewInventorySystem);
 	}
 
 	/**

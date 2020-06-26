@@ -25,13 +25,21 @@ namespace pocketmine\utils;
 
 use function is_array;
 use function json_encode;
+use function json_last_error_msg;
 use function mb_scrub;
+use function preg_last_error;
 use function preg_quote;
 use function preg_replace;
 use function preg_split;
 use function str_repeat;
 use function str_replace;
 use const JSON_UNESCAPED_SLASHES;
+use const PREG_BACKTRACK_LIMIT_ERROR;
+use const PREG_BAD_UTF8_ERROR;
+use const PREG_BAD_UTF8_OFFSET_ERROR;
+use const PREG_INTERNAL_ERROR;
+use const PREG_JIT_STACKLIMIT_ERROR;
+use const PREG_RECURSION_LIMIT_ERROR;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 
@@ -66,13 +74,39 @@ abstract class TextFormat{
 	public const ITALIC = TextFormat::ESCAPE . "o";
 	public const RESET = TextFormat::ESCAPE . "r";
 
+	private static function makePcreError() : \InvalidArgumentException{
+		$errorCode = preg_last_error();
+		$message = [
+			PREG_INTERNAL_ERROR => "Internal error",
+			PREG_BACKTRACK_LIMIT_ERROR => "Backtrack limit reached",
+			PREG_RECURSION_LIMIT_ERROR => "Recursion limit reached",
+			PREG_BAD_UTF8_ERROR => "Malformed UTF-8",
+			PREG_BAD_UTF8_OFFSET_ERROR => "Bad UTF-8 offset",
+			PREG_JIT_STACKLIMIT_ERROR => "PCRE JIT stack limit reached"
+		][$errorCode] ?? "Unknown (code $errorCode)";
+		throw new \InvalidArgumentException("PCRE error: $message");
+	}
+
+	/**
+	 * @throws \InvalidArgumentException
+	 */
+	private static function preg_replace(string $pattern, string $replacement, string $string) : string{
+		$result = preg_replace($pattern, $replacement, $string);
+		if($result === null){
+			throw self::makePcreError();
+		}
+		return $result;
+	}
+
 	/**
 	 * Splits the string by Format tokens
 	 *
 	 * @return string[]
 	 */
 	public static function tokenize(string $string) : array{
-		return preg_split("/(" . TextFormat::ESCAPE . "[0-9a-fk-or])/u", $string, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+		$result = preg_split("/(" . TextFormat::ESCAPE . "[0-9a-fk-or])/u", $string, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+		if($result === false) throw self::makePcreError();
+		return $result;
 	}
 
 	/**
@@ -82,11 +116,11 @@ abstract class TextFormat{
 	 */
 	public static function clean(string $string, bool $removeFormat = true) : string{
 		$string = mb_scrub($string, 'UTF-8');
-		$string = preg_replace("/[\x{E000}-\x{F8FF}]/u", "", $string); //remove unicode private-use-area characters (they might break the console)
+		$string = self::preg_replace("/[\x{E000}-\x{F8FF}]/u", "", $string); //remove unicode private-use-area characters (they might break the console)
 		if($removeFormat){
-			$string = str_replace(TextFormat::ESCAPE, "", preg_replace("/" . TextFormat::ESCAPE . "[0-9a-fk-or]/u", "", $string));
+			$string = str_replace(TextFormat::ESCAPE, "", self::preg_replace("/" . TextFormat::ESCAPE . "[0-9a-fk-or]/u", "", $string));
 		}
-		return str_replace("\x1b", "", preg_replace("/\x1b[\\(\\][[0-9;\\[\\(]+[Bm]/u", "", $string));
+		return str_replace("\x1b", "", self::preg_replace("/\x1b[\\(\\][[0-9;\\[\\(]+[Bm]/u", "", $string));
 	}
 
 	/**
@@ -95,7 +129,7 @@ abstract class TextFormat{
 	 * @param string $placeholder default "&"
 	 */
 	public static function colorize(string $string, string $placeholder = "&") : string{
-		return preg_replace('/' . preg_quote($placeholder, "/") . '([0-9a-fk-or])/u', TextFormat::ESCAPE . '$1', $string);
+		return self::preg_replace('/' . preg_quote($placeholder, "/") . '([0-9a-fk-or])/u', TextFormat::ESCAPE . '$1', $string);
 	}
 
 	/**
@@ -281,7 +315,11 @@ abstract class TextFormat{
 			}
 		}
 
-		return json_encode($newString, JSON_UNESCAPED_SLASHES);
+		$result = json_encode($newString, JSON_UNESCAPED_SLASHES);
+		if($result === false){
+			throw new \InvalidArgumentException("Failed to encode result JSON: " . json_last_error_msg());
+		}
+		return $result;
 	}
 
 	/**
