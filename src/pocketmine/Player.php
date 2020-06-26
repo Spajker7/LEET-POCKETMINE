@@ -117,6 +117,7 @@ use pocketmine\network\mcpe\protocol\ContainerClosePacket;
 use pocketmine\network\mcpe\protocol\ContainerOpenPacket;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\DisconnectPacket;
+use pocketmine\network\mcpe\protocol\EmotePacket;
 use pocketmine\network\mcpe\protocol\InteractPacket;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
 use pocketmine\network\mcpe\protocol\ItemFrameDropItemPacket;
@@ -943,6 +944,18 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				unset($this->usedItemsCooldown[$itemId]);
 			}
 		}
+	}
+
+	public function handleEmote(EmotePacket $packet) : bool{
+
+		$pk = EmotePacket::create($this->getId(), $packet->getEmoteId(), EmotePacket::FLAG_SERVER);
+
+		// TODO: make this only send to close players
+		foreach ($this->getServer()->getOnlinePlayers() as $player) {
+			$player->dataPacket($pk);
+		}
+
+		return true;
 	}
 
 	protected function switchLevel(Level $targetLevel) : bool{
