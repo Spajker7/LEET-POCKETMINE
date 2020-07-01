@@ -87,35 +87,44 @@ class ResourcePackManager{
 			try{
 				/** @var string $pack */
 				$packPath = $this->path . DIRECTORY_SEPARATOR . $pack;
-				if(!file_exists($packPath)){
-					throw new ResourcePackException("File or directory not found");
-				}
-				if(is_dir($packPath)){
-					throw new ResourcePackException("Directory resource packs are unsupported");
-				}
 
-				$newPack = null;
-				//Detect the type of resource pack.
-				$info = new \SplFileInfo($packPath);
-				switch($info->getExtension()){
-					case "zip":
-					case "mcpack":
-						$newPack = new ZippedResourcePack($packPath);
-						break;
-				}
-
-				if($newPack instanceof ResourcePack){
-					$this->resourcePacks[] = $newPack;
-					$this->uuidList[strtolower($newPack->getPackId())] = $newPack;
-				}else{
-					throw new ResourcePackException("Format not recognized");
-				}
+				$this->addResourcePack($this->parseResourcePack($packPath));
 			}catch(ResourcePackException $e){
 				$logger->critical("Could not load resource pack \"$pack\": " . $e->getMessage());
 			}
 		}
 
 		$logger->debug("Successfully loaded " . count($this->resourcePacks) . " resource packs");
+	}
+
+	public function addResourcePack(ResourcePack $pack){
+		$this->resourcePacks[] = $pack;
+		$this->uuidList[strtolower($pack->getPackId())] = $pack;
+	}
+
+	private function parseResourcePack(string $path) : ResourcePack{
+		if(!file_exists($path)){
+			throw new ResourcePackException("File or directory not found");
+		}
+		if(is_dir($path)){
+			throw new ResourcePackException("Directory resource packs are unsupported");
+		}
+
+		$newPack = null;
+		//Detect the type of resource pack.
+		$info = new \SplFileInfo($path);
+		switch($info->getExtension()){
+			case "zip":
+			case "mcpack":
+				$newPack = new ZippedResourcePack($path);
+				break;
+		}
+
+		if(!($newPack instanceof ResourcePack)){
+			throw new ResourcePackException("Format not recognized");
+		}
+
+		return $newPack;
 	}
 
 	/**
