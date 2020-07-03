@@ -33,6 +33,7 @@ use pocketmine\entity\Effect;
 use pocketmine\entity\EffectInstance;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
+use pocketmine\entity\Interactable;
 use pocketmine\entity\object\ItemEntity;
 use pocketmine\entity\PersonaPieceTintColor;
 use pocketmine\entity\PersonaSkinPiece;
@@ -2660,6 +2661,10 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 				switch($type){
 					case InventoryTransactionPacket::USE_ITEM_ON_ENTITY_ACTION_INTERACT:
+						if($target instanceof Interactable){
+							$target->onInteract($this);
+							return true;
+						}
 						break; //TODO
 					case InventoryTransactionPacket::USE_ITEM_ON_ENTITY_ACTION_ATTACK:
 						if(!$target->isAlive()){
