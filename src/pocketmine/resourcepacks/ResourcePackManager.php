@@ -102,7 +102,7 @@ class ResourcePackManager{
 		$this->uuidList[strtolower($pack->getPackId())] = $pack;
 	}
 
-	private function parseResourcePack(string $path) : ResourcePack{
+	public function parseResourcePack(string $path) : ResourcePack{
 		if(!file_exists($path)){
 			throw new ResourcePackException("File or directory not found");
 		}
