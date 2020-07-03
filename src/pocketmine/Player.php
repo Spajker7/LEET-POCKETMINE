@@ -958,13 +958,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	}
 
 	public function handleEmote(EmotePacket $packet) : bool{
-
 		$pk = EmotePacket::create($this->getId(), $packet->getEmoteId(), EmotePacket::FLAG_SERVER);
-
-		// TODO: make this only send to close players
-		foreach ($this->getServer()->getOnlinePlayers() as $player) {
-			$player->dataPacket($pk);
-		}
+		$this->getLevelNonNull()->broadcastPacketToViewers($this->getPosition(), $pk);
 
 		return true;
 	}
