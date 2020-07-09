@@ -97,9 +97,11 @@ class ResourcePackManager{
 		$logger->debug("Successfully loaded " . count($this->resourcePacks) . " resource packs");
 	}
 
-	public function addResourcePack(ResourcePack $pack){
+	public function addResourcePack(ResourcePack $pack, bool $forced = false){
 		$this->resourcePacks[] = $pack;
 		$this->uuidList[strtolower($pack->getPackId())] = $pack;
+
+		$this->serverForceResources = $this->serverForceResources || $forced;
 	}
 
 	public function parseResourcePack(string $path) : ResourcePack{
