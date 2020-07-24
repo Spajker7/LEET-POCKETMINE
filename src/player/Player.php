@@ -426,6 +426,10 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		return $this;
 	}
 
+	public function getPlayerInfo(): PlayerInfo{
+		return $this->playerInfo;
+	}
+
 	/**
 	 * TODO: not sure this should be nullable
 	 */
