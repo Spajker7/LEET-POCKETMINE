@@ -90,6 +90,10 @@ class Door extends Transparent{
 		return false;
 	}
 
+	public function isOpen() : bool{
+		return $this->open;
+	}
+
 	/**
 	 * @return AxisAlignedBB[]
 	 */
@@ -132,8 +136,8 @@ class Door extends Transparent{
 		return false;
 	}
 
-	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
-		$this->open = !$this->open;
+	public function setOpen(bool $open): void{
+		$this->open = $open;
 
 		$other = $this->getSide($this->top ? Facing::DOWN : Facing::UP);
 		if($other instanceof Door and $other->isSameType($this)){
@@ -143,6 +147,12 @@ class Door extends Transparent{
 
 		$this->pos->getWorld()->setBlock($this->pos, $this);
 		$this->pos->getWorld()->addSound($this->pos, new DoorSound());
+	}
+
+
+
+	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
+		$this->setOpen(!$this->open);
 
 		return true;
 	}
