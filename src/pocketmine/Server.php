@@ -1567,15 +1567,6 @@ class Server{
 				$this->setDefaultLevel($this->getLevelByName($default));
 			}
 
-			$worldIterator = new \FilesystemIterator($this->getDataPath() . "worlds/", \FilesystemIterator::SKIP_DOTS);
-
-			foreach($worldIterator as $fileInfo){
-				if($fileInfo->isDir()){
-					$this->logger->info("Loading level {$fileInfo->getFilename()}...");
-					$this->loadLevel($fileInfo->getFilename());
-				}
-			}
-
 			if($this->properties->hasChanged()){
 				$this->properties->save();
 			}
