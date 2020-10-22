@@ -2872,6 +2872,13 @@ class Level implements ChunkManager, Metadatable{
 	}
 
 	/**
+	 * Returns the level.dat name
+	 */
+	public function getLevelDatName() : string{
+		return $this->displayName;
+	}
+
+	/**
 	 * Sets the current time on the level
 	 *
 	 * @return void
