@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\convert;
 
 use pocketmine\block\BlockIds;
+use pocketmine\nbt\BigEndianNBTStream;
+use pocketmine\nbt\LittleEndianNBTStream;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\CompoundTag;
@@ -48,22 +50,47 @@ final class RuntimeBlockMapping{
 	/** @var CompoundTag[]|null */
 	private static $bedrockKnownStates = null;
 
+	private static $initilized = false;
+
 	private function __construct(){
 		//NOOP
 	}
 
 	public static function init() : void{
-		$tag = (new NetworkLittleEndianNBTStream())->read(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/required_block_states.nbt"));
+		$tag = (new LittleEndianNBTStream())->read(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/runtime_block_states.dat"));
+
 		if(!($tag instanceof ListTag) or $tag->getTagType() !== NBT::TAG_Compound){ //this is a little redundant currently, but good for auto complete and makes phpstan happy
 			throw new \RuntimeException("Invalid blockstates table, expected TAG_List<TAG_Compound> root");
 		}
 
 		/** @var CompoundTag[] $list */
 		$list = $tag->getValue();
-		self::$bedrockKnownStates = self::randomizeTable($list);
+		//self::$bedrockKnownStates = self::randomizeTable($list);
 
-		self::setupLegacyMappings();
+		//self::setupLegacyMappings();
+
+		$runtimeId = 0;
+
+		foreach ($list as $item) {
+			$blockRunTimeId = $runtimeId++;
+			if(! $item->hasTag("LegacyStates", ListTag::class)) {
+				continue;
+			}
+
+			$legacyStates = $item->getListTag("LegacyStates");
+
+			/** @var CompoundTag $legacyState */
+			foreach ($legacyStates as $legacyState) {
+				$legacyId = $legacyState->getInt("id");
+				$legacyValue = $legacyState->getShort("val");
+
+				self::registerMapping($blockRunTimeId, $legacyId, $legacyValue);
+			}
+		}
+
+		self::$initilized = true;
 	}
+
 
 	private static function setupLegacyMappings() : void{
 		$legacyIdMap = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/block_id_map.json"), true);
@@ -122,7 +149,7 @@ final class RuntimeBlockMapping{
 	}
 
 	private static function lazyInit() : void{
-		if(self::$bedrockKnownStates === null){
+		if(!self::$initilized){
 			self::init();
 		}
 	}

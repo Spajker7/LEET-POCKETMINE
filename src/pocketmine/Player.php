@@ -1741,6 +1741,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$pk = new UpdateAttributesPacket();
 			$pk->entityRuntimeId = $this->id;
 			$pk->entries = $entries;
+			$pk->tick = $this->getServer()->getTick(); // TODO: is this ok?
 			$this->dataPacket($pk);
 			foreach($entries as $entry){
 				$entry->markSynchronized();
@@ -1956,7 +1957,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$animations = [];
 		if(isset($packet->clientData["AnimatedImageData"])){
 			foreach($packet->clientData["AnimatedImageData"] as $data){
-				$animations[] = new SkinAnimation(new SerializedImage($data["ImageWidth"], $data["ImageHeight"], base64_decode($data["Image"])), $data["Type"], $data["Frames"]);
+				$animations[] = new SkinAnimation(new SerializedImage($data["ImageWidth"], $data["ImageHeight"], base64_decode($data["Image"])), $data["Type"], $data["Frames"], $data["AnimationExpression"]);
 			}
 		}
 
@@ -2244,7 +2245,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->pitch = $this->pitch;
 		$pk->yaw = $this->yaw;
 		$pk->seed = -1;
-		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "", $this->level->getDimension()); //TODO: implement this properly
+		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "plains", $this->level->getDimension()); //TODO: implement this properly
 		$pk->worldGamemode = Player::getClientFriendlyGamemode($this->server->getGamemode());
 		$pk->difficulty = $this->level->getDifficulty();
 		$pk->spawnX = $spawnPosition->getFloorX();
@@ -3068,6 +3069,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			unset($this->openHardcodedWindows[$packet->windowId]);
 			$pk = new ContainerClosePacket();
 			$pk->windowId = $packet->windowId;
+			$pk->wasServerInitiated = false;
 			$this->sendDataPacket($pk);
 			return true;
 		}
@@ -3922,6 +3924,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->yaw = $yaw;
 		$pk->mode = $mode;
 		$pk->onGround = $this->onGround;
+		$pk->tick = $this->getServer()->getTick(); // TODO
 
 		if($targets !== null){
 			if(in_array($this, $targets, true)){

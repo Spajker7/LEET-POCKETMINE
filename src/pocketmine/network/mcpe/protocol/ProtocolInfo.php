@@ -37,11 +37,11 @@ interface ProtocolInfo{
 	 */
 
 	/** Actual Minecraft: PE protocol version */
-	public const CURRENT_PROTOCOL = 408;
+	public const CURRENT_PROTOCOL = 419;
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
-	public const MINECRAFT_VERSION = 'v1.16.20';
+	public const MINECRAFT_VERSION = 'v1.16.100';
 	/** Version number sent to clients in ping responses. */
-	public const MINECRAFT_VERSION_NETWORK = '1.16.20';
+	public const MINECRAFT_VERSION_NETWORK = '1.16.100';
 
 	public const LOGIN_PACKET = 0x01;
 	public const PLAY_STATUS_PACKET = 0x02;
@@ -199,5 +199,11 @@ interface ProtocolInfo{
 	public const POSITION_TRACKING_D_B_CLIENT_REQUEST_PACKET = 0x9a;
 	public const DEBUG_INFO_PACKET = 0x9b;
 	public const PACKET_VIOLATION_WARNING_PACKET = 0x9c;
+	// TODO: MotionPredictionHintsPacket
+	// TODO: AnimateEntityPacket
+	// TODO: CameraShakePacket
+	// TODO: PlayerFogPacket
+	// TODO: CorrectPlayerMovePredictionPacket
+	// TODO: ItemComponentPacket
 
 }

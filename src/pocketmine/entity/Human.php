@@ -822,6 +822,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 		$pk->pitch = $this->pitch;
 		$pk->headYaw = $this->yaw;
 		$pk->mode = $teleport ? MovePlayerPacket::MODE_TELEPORT : MovePlayerPacket::MODE_NORMAL;
+		$pk->tick = $this->server->getTick(); // TODO
 
 		//we can't assume that everyone who is using our chunk wants to see this movement,
 		//because this human might be a player who shouldn't be receiving his own movement.

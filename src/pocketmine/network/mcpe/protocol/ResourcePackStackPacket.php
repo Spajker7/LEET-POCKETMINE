@@ -26,6 +26,7 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\network\mcpe\protocol\types\Experiment;
 use pocketmine\resourcepacks\ResourcePack;
 use function count;
 
@@ -44,6 +45,8 @@ class ResourcePackStackPacket extends DataPacket{
 	public $isExperimental = false;
 	/** @var string */
 	public $baseGameVersion = ProtocolInfo::MINECRAFT_VERSION_NETWORK;
+	/** @var Experiment[] */
+	public $experiments = [];
 
 	protected function decodePayload(){
 		$this->mustAccept = $this->getBool();
@@ -61,8 +64,10 @@ class ResourcePackStackPacket extends DataPacket{
 			$this->getString();
 		}
 
-		$this->isExperimental = $this->getBool();
 		$this->baseGameVersion = $this->getString();
+		$this->experiments = $this->getExperiments();
+		$this->isExperimental = $this->getBool();
+
 	}
 
 	protected function encodePayload(){
@@ -82,8 +87,10 @@ class ResourcePackStackPacket extends DataPacket{
 			$this->putString(""); //TODO: subpack name
 		}
 
-		$this->putBool($this->isExperimental);
 		$this->putString($this->baseGameVersion);
+		$this->putExperiments($this->experiments);
+		$this->putBool($this->isExperimental);
+
 	}
 
 	public function handle(NetworkSession $session) : bool{

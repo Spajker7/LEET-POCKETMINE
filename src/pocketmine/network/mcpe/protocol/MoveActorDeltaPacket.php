@@ -30,6 +30,8 @@ use pocketmine\network\mcpe\NetworkSession;
 class MoveActorDeltaPacket extends DataPacket{
 	public const NETWORK_ID = ProtocolInfo::MOVE_ACTOR_DELTA_PACKET;
 
+	// TODO: v419
+
 	public const FLAG_HAS_X = 0x01;
 	public const FLAG_HAS_Y = 0x02;
 	public const FLAG_HAS_Z = 0x04;

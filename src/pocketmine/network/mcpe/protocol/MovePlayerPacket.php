@@ -56,6 +56,8 @@ class MovePlayerPacket extends DataPacket{
 	public $teleportCause = 0;
 	/** @var int */
 	public $teleportItem = 0;
+	/** @var int */
+	public $tick;
 
 	protected function decodePayload(){
 		$this->entityRuntimeId = $this->getEntityRuntimeId();
@@ -70,6 +72,7 @@ class MovePlayerPacket extends DataPacket{
 			$this->teleportCause = $this->getLInt();
 			$this->teleportItem = $this->getLInt();
 		}
+		$this->tick = $this->getUnsignedVarInt();
 	}
 
 	protected function encodePayload(){
@@ -85,6 +88,7 @@ class MovePlayerPacket extends DataPacket{
 			$this->putLInt($this->teleportCause);
 			$this->putLInt($this->teleportItem);
 		}
+		$this->putUnsignedVarInt($this->tick);
 	}
 
 	public function handle(NetworkSession $session) : bool{

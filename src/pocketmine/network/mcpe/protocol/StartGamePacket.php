@@ -27,11 +27,14 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\NetworkBinaryStream;
 use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\network\mcpe\protocol\types\AuthoritativeMovementType;
 use pocketmine\network\mcpe\protocol\types\EducationEditionOffer;
+use pocketmine\network\mcpe\protocol\types\Experiment;
 use pocketmine\network\mcpe\protocol\types\GameRuleType;
 use pocketmine\network\mcpe\protocol\types\GeneratorType;
 use pocketmine\network\mcpe\protocol\types\MultiplayerGameVisibility;
@@ -116,6 +119,10 @@ class StartGamePacket extends DataPacket{
 	public $gameRules = [ //TODO: implement this
 		"naturalregeneration" => [GameRuleType::BOOL, false] //Hack for client side regeneration
 	];
+	/** @var Experiment[] */
+	public $experiments = [];
+	/** @var bool */
+	public $experimentsPreviouslyToggled = false;
 	/** @var bool */
 	public $hasBonusChestEnabled = false;
 	/** @var bool */
@@ -159,8 +166,8 @@ class StartGamePacket extends DataPacket{
 	public $premiumWorldTemplateId = "";
 	/** @var bool */
 	public $isTrial = false;
-	/** @var bool */
-	public $isMovementServerAuthoritative = false;
+	/** @var AuthoritativeMovementType */
+	public $authoritativeMovementType = AuthoritativeMovementType::CLIENT;
 	/** @var int */
 	public $currentTick = 0; //only used if isTrial is true
 	/** @var int */
@@ -168,7 +175,7 @@ class StartGamePacket extends DataPacket{
 	/** @var string */
 	public $multiplayerCorrelationId = ""; //TODO: this should be filled with a UUID of some sort
 
-	/** @var ListTag|null */
+	/** @var CompoundTag[]|null */
 	public $blockTable = null;
 	/**
 	 * @var int[]|null string (name) => int16 (legacyID)
@@ -210,6 +217,8 @@ class StartGamePacket extends DataPacket{
 		$this->commandsEnabled = $this->getBool();
 		$this->isTexturePacksRequired = $this->getBool();
 		$this->gameRules = $this->getGameRules();
+		$this->experiments = $this->getExperiments();
+		$this->experimentsPreviouslyToggled = $this->getBool();
 		$this->hasBonusChestEnabled = $this->getBool();
 		$this->hasStartWithMapEnabled = $this->getBool();
 		$this->defaultPlayerPermission = $this->getVarInt();
@@ -235,22 +244,26 @@ class StartGamePacket extends DataPacket{
 		$this->worldName = $this->getString();
 		$this->premiumWorldTemplateId = $this->getString();
 		$this->isTrial = $this->getBool();
-		$this->isMovementServerAuthoritative = $this->getBool();
+		$this->authoritativeMovementType = $this->getUnsignedVarInt();
 		$this->currentTick = $this->getLLong();
 
 		$this->enchantmentSeed = $this->getVarInt();
 
-		$blockTable = (new NetworkLittleEndianNBTStream())->read($this->buffer, false, $this->offset, 512);
-		if(!($blockTable instanceof ListTag)){
-			throw new \UnexpectedValueException("Wrong block table root NBT tag type");
+		$blockTable = [];
+		for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; ++$i){
+			$name = $this->getString();
+			$tag = (new NetworkLittleEndianNBTStream())->read($this->buffer, false, $this->offset, 512);
+			if(!($tag instanceof CompoundTag)){
+				throw new \UnexpectedValueException("Wrong block root NBT tag type");
+			}
+			$blockTable[$name] = $tag;
 		}
-		$this->blockTable = $blockTable;
 
 		$this->itemTable = [];
 		for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; ++$i){
 			$id = $this->getString();
 			$legacyId = $this->getSignedLShort();
-
+			$componentBased = $this->getBool(); // TODO: figure out where to put this
 			$this->itemTable[$id] = $legacyId;
 		}
 
@@ -290,6 +303,8 @@ class StartGamePacket extends DataPacket{
 		$this->putBool($this->commandsEnabled);
 		$this->putBool($this->isTexturePacksRequired);
 		$this->putGameRules($this->gameRules);
+		$this->putExperiments($this->experiments);
+		$this->putBool($this->experimentsPreviouslyToggled);
 		$this->putBool($this->hasBonusChestEnabled);
 		$this->putBool($this->hasStartWithMapEnabled);
 		$this->putVarInt($this->defaultPlayerPermission);
@@ -314,23 +329,26 @@ class StartGamePacket extends DataPacket{
 		$this->putString($this->worldName);
 		$this->putString($this->premiumWorldTemplateId);
 		$this->putBool($this->isTrial);
-		$this->putBool($this->isMovementServerAuthoritative);
+		$this->putUnsignedVarInt($this->authoritativeMovementType);
 		$this->putLLong($this->currentTick);
 
 		$this->putVarInt($this->enchantmentSeed);
 
-		if($this->blockTable === null){
-			if(self::$blockTableCache === null){
-				//this is a really nasty hack, but it'll do for now
-				self::$blockTableCache = (new NetworkLittleEndianNBTStream())->write(new ListTag("", RuntimeBlockMapping::getBedrockKnownStates()));
-			}
-			$this->put(self::$blockTableCache);
-		}else{
-			$this->put((new NetworkLittleEndianNBTStream())->write($this->blockTable));
+		// TODO:
+		if($this->blockTable === null) {
+			$this->blockTable = [];
 		}
+
+		$this->putUnsignedVarInt(count($this->blockTable));
+		foreach ($this->blockTable as $name => $tag) {
+			$this->putString($name);
+			(new NetworkLittleEndianNBTStream())->write($tag);
+		}
+
+		// TODO:
 		if($this->itemTable === null){
 			if(self::$itemTableCache === null){
-				self::$itemTableCache = self::serializeItemTable(json_decode(file_get_contents(RESOURCE_PATH . '/vanilla/item_id_map.json'), true));
+				self::$itemTableCache = self::serializeItemTable(json_decode(file_get_contents(RESOURCE_PATH . '/vanilla/runtime_item_ids.json'), true));
 			}
 			$this->put(self::$itemTableCache);
 		}else{
@@ -348,9 +366,10 @@ class StartGamePacket extends DataPacket{
 	private static function serializeItemTable(array $table) : string{
 		$stream = new NetworkBinaryStream();
 		$stream->putUnsignedVarInt(count($table));
-		foreach($table as $name => $legacyId){
-			$stream->putString($name);
-			$stream->putLShort($legacyId);
+		foreach($table as $entry){
+			$stream->putString($entry["name"]);
+			$stream->putLShort($entry["id"]);
+			$stream->putBool(false); // TODO
 		}
 		return $stream->getBuffer();
 	}

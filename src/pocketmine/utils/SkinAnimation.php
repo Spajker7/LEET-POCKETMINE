@@ -32,11 +32,14 @@ class SkinAnimation{
 	private $type;
 	/** @var float */
 	private $frames;
+	/** @var int */
+	private $expressionType;
 
-	public function __construct(SerializedImage $image, int $type, float $frames){
+	public function __construct(SerializedImage $image, int $type, float $frames, int $expressionType){
 		$this->image = $image;
 		$this->type = $type;
 		$this->frames = $frames;
+		$this->expressionType = $expressionType;
 	}
 
 	public function getImage() : SerializedImage{
@@ -49,5 +52,9 @@ class SkinAnimation{
 
 	public function getFrames() : float{
 		return $this->frames;
+	}
+
+	public function getExpressionType(): int{
+		return $this->expressionType;
 	}
 }

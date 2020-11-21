@@ -40,6 +40,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\network\mcpe\protocol\types\CommandOriginData;
 use pocketmine\network\mcpe\protocol\types\EntityLink;
+use pocketmine\network\mcpe\protocol\types\Experiment;
 use pocketmine\network\mcpe\protocol\types\GameRuleType;
 use pocketmine\network\mcpe\protocol\types\StructureEditorData;
 use pocketmine\network\mcpe\protocol\types\StructureSettings;
@@ -88,7 +89,7 @@ class NetworkBinaryStream extends BinaryStream{
 		$animationCount = $this->getLInt();
 		$animations = [];
 		for($i = 0, $count = $animationCount; $i < $count; ++$i){
-			$animations[] = new SkinAnimation($this->getImage(), $this->getLInt(), $this->getLFloat());
+			$animations[] = new SkinAnimation($this->getImage(), $this->getLInt(), $this->getLFloat(), $this->getLInt());
 		}
 		$capeData = $this->getImage();
 		$geometryData = $this->getString();
@@ -143,6 +144,7 @@ class NetworkBinaryStream extends BinaryStream{
 			$this->putImage($animation->getImage());
 			$this->putLInt($animation->getType());
 			$this->putLFloat($animation->getFrames());
+			$this->putLInt($animation->getExpressionType());
 		}
 		$this->putImage($skin->getCapeData());
 		$this->putString($skin->getGeometryData());
@@ -756,5 +758,30 @@ class NetworkBinaryStream extends BinaryStream{
 
 	public function writeGenericTypeNetworkId(int $id) : void{
 		$this->putVarInt($id);
+	}
+
+	/**
+	 * @return Experiment[]
+	 */
+	protected function getExperiments() : array{
+		$experiments = [];
+		$count = $this->getLInt();
+
+		for($i = 0; $i < $count; $i++){
+			$experiments[] = new Experiment($this->getString(), $this->getBool());
+		}
+
+		return $experiments;
+	}
+
+	/**
+	 * @param Experiment[] $experiments
+	 */
+	protected function putExperiments(array $experiments) : void{
+		$this->putLInt(count($experiments));
+		foreach ($experiments as $experiment){
+			$this->putString($experiment->getName());
+			$this->putBool($experiment->isEnabled());
+		}
 	}
 }

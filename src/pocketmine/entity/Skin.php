@@ -335,7 +335,7 @@ class Skin{
 							$animationTag->getInt("ImageWidth"),
 							$animationTag->getInt("ImageHeight"),
 							$animationTag->getByteArray("Data")),
-						$animationTag->getInt("Type"), $animationTag->getFloat("Frames"));
+						$animationTag->getInt("Type"), $animationTag->getFloat("Frames"), $animationTag->getInt("ExpressionType", 0));
 				}
 			}
 
@@ -407,7 +407,8 @@ class Skin{
 				new IntTag("ImageHeight", $animation->getImage()->getHeight()),
 				new IntTag("ImageWidth", $animation->getImage()->getWidth()),
 				new IntTag("Type", $animation->getType()),
-				new FloatTag("Frames", $animation->getFrames())
+				new FloatTag("Frames", $animation->getFrames()),
+				new IntTag("AnimationExpression", $animation->getExpressionType())
 			]);
 
 			$animations[] = $animationTag;

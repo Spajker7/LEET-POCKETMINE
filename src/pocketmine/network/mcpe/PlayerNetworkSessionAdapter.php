@@ -330,6 +330,7 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 	}
 
 	public function handlePacketViolationWarning(PacketViolationWarningPacket $packet): bool{
+		var_dump($packet);
 		return false;
 	}
 
