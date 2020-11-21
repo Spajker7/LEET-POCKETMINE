@@ -37,8 +37,6 @@ class SetActorDataPacket extends DataPacket{
 	 * @phpstan-var array<int, array{0: int, 1: mixed}>
 	 */
 	public $metadata;
-	/** @var int */
-	public $tick;
 
 	/** @var int */
 	public $tick = 0;
