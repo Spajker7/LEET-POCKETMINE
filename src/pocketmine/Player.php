@@ -102,6 +102,7 @@ use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\DoubleTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
@@ -150,6 +151,8 @@ use pocketmine\network\mcpe\protocol\types\CommandData;
 use pocketmine\network\mcpe\protocol\types\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\CommandParameter;
 use pocketmine\network\mcpe\protocol\types\ContainerIds;
+use pocketmine\network\mcpe\protocol\types\DimensionIds;
+use pocketmine\network\mcpe\protocol\types\Experiments;
 use pocketmine\network\mcpe\protocol\types\GameMode;
 use pocketmine\network\mcpe\protocol\types\inventory\UIInventorySlotOffset;
 use pocketmine\network\mcpe\protocol\types\NetworkInventoryAction;
@@ -1606,10 +1609,15 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$dy = $newPos->y - $this->y;
 			$dz = $newPos->z - $this->z;
 
+			//the client likes to clip into blocks like stairs, but we do full server-side prediction of that without
+			//help from the client's position changes, so we deduct the expected clip height from the moved distance.
+			$expectedClipDistance = $this->ySize * (1 - self::STEP_CLIP_MULTIPLIER);
+			$dy -= $expectedClipDistance;
 			$this->move($dx, $dy, $dz);
 
 			$diff = $this->distanceSquared($newPos);
 
+			//TODO: Explore lowering this threshold now that stairs work properly.
 			if($this->isSurvival() and $diff > 0.0625){
 				$ev = new PlayerIllegalMoveEvent($this, $newPos, new Vector3($this->lastX, $this->lastY, $this->lastZ));
 				$ev->setCancelled($this->allowMovementCheats);
@@ -1619,7 +1627,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				if(!$ev->isCancelled()){
 					$revert = true;
 					$this->server->getLogger()->debug($this->getServer()->getLanguage()->translateString("pocketmine.player.invalidMove", [$this->getName()]));
-					$this->server->getLogger()->debug("Old position: " . $this->asVector3() . ", new position: " . $newPos);
+					$this->server->getLogger()->debug("Old position: " . $this->asVector3() . ", new position: " . $newPos . ", expected clip distance: $expectedClipDistance");
 				}
 			}
 
@@ -1741,7 +1749,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$pk = new UpdateAttributesPacket();
 			$pk->entityRuntimeId = $this->id;
 			$pk->entries = $entries;
-			$pk->tick = $this->getServer()->getTick(); // TODO: is this ok?
 			$this->dataPacket($pk);
 			foreach($entries as $entry){
 				$entry->markSynchronized();
@@ -2194,6 +2201,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				//but it does have an annoying side-effect when true: it makes
 				//the client remove its own non-server-supplied resource packs.
 				$pk->mustAccept = false;
+				$pk->experiments = new Experiments([], false);
 				$this->dataPacket($pk);
 				break;
 			case ResourcePackClientResponsePacket::STATUS_COMPLETED:
@@ -2245,7 +2253,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->pitch = $this->pitch;
 		$pk->yaw = $this->yaw;
 		$pk->seed = -1;
-		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "plains", $this->level->getDimension()); //TODO: implement this properly
+		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "", DimensionIds::OVERWORLD); //TODO: implement this properly
 		$pk->worldGamemode = Player::getClientFriendlyGamemode($this->server->getGamemode());
 		$pk->difficulty = $this->level->getDifficulty();
 		$pk->spawnX = $spawnPosition->getFloorX();
@@ -2259,6 +2267,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->commandsEnabled = true;
 		$pk->levelId = "";
 		$pk->worldName = $this->server->getMotd();
+		$pk->experiments = new Experiments([], false);
+		$pk->itemTable = ItemTypeDictionary::getInstance()->getEntries();
 		$this->dataPacket($pk);
 
 		$this->sendDataPacket(new AvailableActorIdentifiersPacket());
@@ -2889,7 +2899,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	}
 
 	public function handlePlayerAction(PlayerActionPacket $packet) : bool{
-		if(!$this->spawned or (!$this->isAlive() and $packet->action !== PlayerActionPacket::ACTION_RESPAWN and $packet->action !== PlayerActionPacket::ACTION_DIMENSION_CHANGE_REQUEST)){
+		if(!$this->spawned or (!$this->isAlive() and $packet->action !== PlayerActionPacket::ACTION_RESPAWN)){
 			return true;
 		}
 
@@ -2905,7 +2915,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				$target = $this->level->getBlock($pos);
 
 				$ev = new PlayerInteractEvent($this, $this->inventory->getItemInHand(), $target, null, $packet->face, PlayerInteractEvent::LEFT_CLICK_BLOCK);
-				if($this->level->checkSpawnProtection($this, $target)){
+				if($this->isSpectator() || $this->level->checkSpawnProtection($this, $target)){
 					$ev->setCancelled();
 				}
 
@@ -2976,7 +2986,10 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			case PlayerActionPacket::ACTION_STOP_SWIMMING:
 				//TODO: handle this when it doesn't spam every damn tick (yet another spam bug!!)
 				break;
-			case PlayerActionPacket::ACTION_INTERACT_BLOCK: //ignored (for now)
+			case PlayerActionPacket::ACTION_INTERACT_BLOCK: //TODO: ignored (for now)
+				break;
+			case PlayerActionPacket::ACTION_CREATIVE_PLAYER_DESTROY_BLOCK:
+				//TODO: do we need to handle this?
 				break;
 			default:
 				$this->server->getLogger()->debug("Unhandled/unknown player action type " . $packet->action . " from " . $this->getName());
@@ -3058,6 +3071,12 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		return true;
 	}
 
+	/** @var int|null */
+	private $closingWindowId = null;
+
+	/** @internal */
+	public function getClosingWindowId() : ?int{ return $this->closingWindowId; }
+
 	public function handleContainerClose(ContainerClosePacket $packet) : bool{
 		if(!$this->spawned){
 			return true;
@@ -3069,13 +3088,15 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			unset($this->openHardcodedWindows[$packet->windowId]);
 			$pk = new ContainerClosePacket();
 			$pk->windowId = $packet->windowId;
-			$pk->wasServerInitiated = false;
+			$pk->server = false;
 			$this->sendDataPacket($pk);
 			return true;
 		}
 		if(isset($this->windowIndex[$packet->windowId])){
+			$this->closingWindowId = $packet->windowId;
 			(new InventoryCloseEvent($this->windowIndex[$packet->windowId], $this))->call();
 			$this->removeWindow($this->windowIndex[$packet->windowId]);
+			$this->closingWindowId = null;
 			//removeWindow handles sending the appropriate
 			return true;
 		}
@@ -3924,15 +3945,16 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->yaw = $yaw;
 		$pk->mode = $mode;
 		$pk->onGround = $this->onGround;
-		$pk->tick = $this->getServer()->getTick(); // TODO
 
 		if($targets !== null){
 			if(in_array($this, $targets, true)){
 				$this->forceMoveSync = $pos->asVector3();
+				$this->ySize = 0;
 			}
 			$this->server->broadcastPacket($targets, $pk);
 		}else{
 			$this->forceMoveSync = $pos->asVector3();
+			$this->ySize = 0;
 			$this->dataPacket($pk);
 		}
 	}
@@ -4141,7 +4163,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	}
 
 	public function onChunkChanged(Chunk $chunk){
-		if(isset($this->usedChunks[$hash = Level::chunkHash($chunk->getX(), $chunk->getZ())])){
+		$hasSent = $this->usedChunks[$hash = Level::chunkHash($chunk->getX(), $chunk->getZ())] ?? false;
+		if($hasSent){
 			$this->usedChunks[$hash] = false;
 			$this->nextChunkOrderRun = 0;
 		}

@@ -77,9 +77,9 @@ use function abs;
 use function assert;
 use function cos;
 use function count;
-use function current;
 use function deg2rad;
 use function floor;
+use function fmod;
 use function get_class;
 use function in_array;
 use function is_a;
@@ -94,6 +94,7 @@ use const M_PI_2;
 abstract class Entity extends Location implements Metadatable, EntityIds{
 
 	public const MOTION_THRESHOLD = 0.00001;
+	protected const STEP_CLIP_MULTIPLIER = 0.4;
 
 	public const NETWORK_ID = -1;
 
@@ -332,8 +333,8 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 	 */
 	private static $knownEntities = [];
 	/**
-	 * @var string[][]
-	 * @phpstan-var array<class-string<Entity>, list<string>>
+	 * @var string[]
+	 * @phpstan-var array<class-string<Entity>, string>
 	 */
 	private static $saveNames = [];
 
@@ -412,7 +413,7 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 				self::$knownEntities[$name] = $className;
 			}
 
-			self::$saveNames[$className] = $saveNames;
+			self::$saveNames[$className] = reset($saveNames);
 
 			return true;
 		}
@@ -707,10 +708,10 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 
 		$this->boundingBox->setBounds(
 			$this->x - $halfWidth,
-			$this->y,
+			$this->y + $this->ySize,
 			$this->z - $halfWidth,
 			$this->x + $halfWidth,
-			$this->y + $this->height,
+			$this->y + $this->height + $this->ySize,
 			$this->z + $halfWidth
 		);
 	}
@@ -870,8 +871,7 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 		if(!isset(self::$saveNames[static::class])){
 			throw new \InvalidStateException("Entity " . static::class . " is not registered");
 		}
-		reset(self::$saveNames[static::class]);
-		return current(self::$saveNames[static::class]);
+		return self::$saveNames[static::class];
 	}
 
 	public function saveNBT() : void{
@@ -1311,7 +1311,7 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 	}
 
 	public function getDirection() : ?int{
-		$rotation = ($this->yaw - 90) % 360;
+		$rotation = fmod($this->yaw - 90, 360);
 		if($rotation < 0){
 			$rotation += 360.0;
 		}
@@ -1449,8 +1449,14 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 				$this->fall($this->fallDistance);
 				$this->resetFallDistance();
 			}
-		}elseif($distanceThisTick < 0){
+		}elseif($distanceThisTick < $this->fallDistance){
+			//we've fallen some distance (distanceThisTick is negative)
+			//or we ascended back towards where fall distance was measured from initially (distanceThisTick is positive but less than existing fallDistance)
 			$this->fallDistance -= $distanceThisTick;
+		}else{
+			//we ascended past the apex where fall distance was originally being measured from
+			//reset it so it will be measured starting from the new, higher position
+			$this->fallDistance = 0;
 		}
 	}
 
@@ -1538,7 +1544,7 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 		if($this->keepMovement){
 			$this->boundingBox->offset($dx, $dy, $dz);
 		}else{
-			$this->ySize *= 0.4;
+			$this->ySize *= self::STEP_CLIP_MULTIPLIER;
 
 			/*
 			if($this->isColliding){ //With cobweb?
@@ -1605,7 +1611,7 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 
 			$this->boundingBox->offset(0, 0, $dz);
 
-			if($this->stepHeight > 0 and $fallingFlag and $this->ySize < 0.05 and ($movX != $dx or $movZ != $dz)){
+			if($this->stepHeight > 0 and $fallingFlag and ($movX != $dx or $movZ != $dz)){
 				$cx = $dx;
 				$cy = $dy;
 				$cz = $dz;
@@ -1637,13 +1643,20 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 
 				$this->boundingBox->offset(0, 0, $dz);
 
+				$reverseDY = -$dy;
+				foreach($list as $bb){
+					$reverseDY = $bb->calculateYOffset($this->boundingBox, $reverseDY);
+				}
+				$dy += $reverseDY;
+				$this->boundingBox->offset(0, $reverseDY, 0);
+
 				if(($cx ** 2 + $cz ** 2) >= ($dx ** 2 + $dz ** 2)){
 					$dx = $cx;
 					$dy = $cy;
 					$dz = $cz;
 					$this->boundingBox->setBB($axisalignedbb1);
 				}else{
-					$this->ySize += 0.5; //FIXME: this should be the height of the block it walked up, not fixed 0.5
+					$this->ySize += $dy;
 				}
 			}
 		}

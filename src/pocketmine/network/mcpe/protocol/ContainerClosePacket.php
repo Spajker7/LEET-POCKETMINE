@@ -33,16 +33,16 @@ class ContainerClosePacket extends DataPacket{
 	/** @var int */
 	public $windowId;
 	/** @var bool */
-	public $wasServerInitiated = false;
+	public $server = false;
 
 	protected function decodePayload(){
 		$this->windowId = $this->getByte();
-		$this->wasServerInitiated = $this->getBool();
+		$this->server = $this->getBool();
 	}
 
 	protected function encodePayload(){
 		$this->putByte($this->windowId);
-		$this->putBool($this->wasServerInitiated);
+		$this->putBool($this->server);
 	}
 
 	public function handle(NetworkSession $session) : bool{

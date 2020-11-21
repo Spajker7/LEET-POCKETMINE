@@ -24,19 +24,13 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\convert;
 
 use pocketmine\block\BlockIds;
-use pocketmine\nbt\BigEndianNBTStream;
-use pocketmine\nbt\LittleEndianNBTStream;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\NetworkBinaryStream;
+use pocketmine\utils\AssumptionFailedError;
 use function file_get_contents;
-use function getmypid;
 use function json_decode;
-use function mt_rand;
-use function mt_srand;
-use function shuffle;
 
 /**
  * @internal
@@ -50,47 +44,24 @@ final class RuntimeBlockMapping{
 	/** @var CompoundTag[]|null */
 	private static $bedrockKnownStates = null;
 
-	private static $initilized = false;
-
 	private function __construct(){
 		//NOOP
 	}
 
 	public static function init() : void{
-		$tag = (new LittleEndianNBTStream())->read(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/runtime_block_states.dat"));
-
-		if(!($tag instanceof ListTag) or $tag->getTagType() !== NBT::TAG_Compound){ //this is a little redundant currently, but good for auto complete and makes phpstan happy
-			throw new \RuntimeException("Invalid blockstates table, expected TAG_List<TAG_Compound> root");
+		$canonicalBlockStatesFile = file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/canonical_block_states.nbt");
+		if($canonicalBlockStatesFile === false){
+			throw new AssumptionFailedError("Missing required resource file");
 		}
-
-		/** @var CompoundTag[] $list */
-		$list = $tag->getValue();
-		//self::$bedrockKnownStates = self::randomizeTable($list);
-
-		//self::setupLegacyMappings();
-
-		$runtimeId = 0;
-
-		foreach ($list as $item) {
-			$blockRunTimeId = $runtimeId++;
-			if(! $item->hasTag("LegacyStates", ListTag::class)) {
-				continue;
-			}
-
-			$legacyStates = $item->getListTag("LegacyStates");
-
-			/** @var CompoundTag $legacyState */
-			foreach ($legacyStates as $legacyState) {
-				$legacyId = $legacyState->getInt("id");
-				$legacyValue = $legacyState->getShort("val");
-
-				self::registerMapping($blockRunTimeId, $legacyId, $legacyValue);
-			}
+		$stream = new NetworkBinaryStream($canonicalBlockStatesFile);
+		$list = [];
+		while(!$stream->feof()){
+			$list[] = $stream->getNbtCompoundRoot();
 		}
+		self::$bedrockKnownStates = $list;
 
-		self::$initilized = true;
+		self::setupLegacyMappings();
 	}
-
 
 	private static function setupLegacyMappings() : void{
 		$legacyIdMap = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/block_id_map.json"), true);
@@ -117,7 +88,7 @@ final class RuntimeBlockMapping{
 		 */
 		$idToStatesMap = [];
 		foreach(self::$bedrockKnownStates as $k => $state){
-			$idToStatesMap[$state->getCompoundTag("block")->getString("name")][] = $k;
+			$idToStatesMap[$state->getString("name")][] = $k;
 		}
 		foreach($legacyStateMap as $pair){
 			$id = $legacyIdMap[$pair->getId()] ?? null;
@@ -132,14 +103,14 @@ final class RuntimeBlockMapping{
 			$mappedState = $pair->getBlockState();
 
 			//TODO HACK: idiotic NBT compare behaviour on 3.x compares keys which are stored by values
-			$mappedState->setName("block");
+			$mappedState->setName("");
 			$mappedName = $mappedState->getString("name");
 			if(!isset($idToStatesMap[$mappedName])){
 				throw new \RuntimeException("Mapped new state does not appear in network table");
 			}
 			foreach($idToStatesMap[$mappedName] as $k){
 				$networkState = self::$bedrockKnownStates[$k];
-				if($mappedState->equals($networkState->getCompoundTag("block"))){
+				if($mappedState->equals($networkState)){
 					self::registerMapping($k, $id, $data);
 					continue 2;
 				}
@@ -149,26 +120,9 @@ final class RuntimeBlockMapping{
 	}
 
 	private static function lazyInit() : void{
-		if(!self::$initilized){
+		if(self::$bedrockKnownStates === null){
 			self::init();
 		}
-	}
-
-	/**
-	 * Randomizes the order of the runtimeID table to prevent plugins relying on them.
-	 * Plugins shouldn't use this stuff anyway, but plugin devs have an irritating habit of ignoring what they
-	 * aren't supposed to do, so we have to deliberately break it to make them stop.
-	 *
-	 * @param CompoundTag[] $table
-	 *
-	 * @return CompoundTag[]
-	 */
-	private static function randomizeTable(array $table) : array{
-		$postSeed = mt_rand(); //save a seed to set afterwards, to avoid poor quality randoms
-		mt_srand(getmypid()); //Use a seed which is the same on all threads. This isn't a secure seed, but we don't care.
-		shuffle($table);
-		mt_srand($postSeed); //restore a good quality seed that isn't dependent on PID
-		return $table;
 	}
 
 	public static function toStaticRuntimeId(int $id, int $meta = 0) : int{

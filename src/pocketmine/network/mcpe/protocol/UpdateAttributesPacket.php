@@ -36,7 +36,7 @@ class UpdateAttributesPacket extends DataPacket{
 	/** @var Attribute[] */
 	public $entries = [];
 	/** @var int */
-	public $tick;
+	public $tick = 0;
 
 	protected function decodePayload(){
 		$this->entityRuntimeId = $this->getEntityRuntimeId();

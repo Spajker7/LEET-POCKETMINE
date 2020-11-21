@@ -154,7 +154,6 @@ class Explosion{
 	 * and creating sounds and particles.
 	 */
 	public function explodeB() : bool{
-		$send = [];
 		$updateBlocks = [];
 
 		$source = (new Vector3($this->source->x, $this->source->y, $this->source->z))->floor();
@@ -232,7 +231,9 @@ class Explosion{
 
 				$t->close();
 			}
+		}
 
+		foreach($this->affectedBlocks as $block){
 			$pos = new Vector3($block->x, $block->y, $block->z);
 
 			for($side = 0; $side <= 5; $side++){
@@ -252,7 +253,6 @@ class Explosion{
 					$updateBlocks[$index] = true;
 				}
 			}
-			$send[] = new Vector3($block->x - $source->x, $block->y - $source->y, $block->z - $source->z);
 		}
 
 		$this->level->addParticle(new HugeExplodeSeedParticle($source));

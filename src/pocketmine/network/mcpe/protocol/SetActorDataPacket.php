@@ -40,6 +40,9 @@ class SetActorDataPacket extends DataPacket{
 	/** @var int */
 	public $tick;
 
+	/** @var int */
+	public $tick = 0;
+
 	protected function decodePayload(){
 		$this->entityRuntimeId = $this->getEntityRuntimeId();
 		$this->metadata = $this->getEntityMetadata();

@@ -83,7 +83,7 @@ class PlayerAuthInputPacket extends DataPacket/* implements ServerboundPacket*/{
 			$result->vrGazeDirection = $vrGazeDirection->asVector3();
 		}
 		$result->tick = $tick;
-		$result->delta = $delta->asVector3();
+		$result->delta = $delta;
 		return $result;
 	}
 
@@ -133,6 +133,10 @@ class PlayerAuthInputPacket extends DataPacket/* implements ServerboundPacket*/{
 		return $this->vrGazeDirection;
 	}
 
+	public function getTick() : int{ return $this->tick; }
+
+	public function getDelta() : Vector3{ return $this->delta; }
+
 	protected function decodePayload() : void{
 		$this->pitch = $this->getLFloat();
 		$this->yaw = $this->getLFloat();
@@ -146,7 +150,7 @@ class PlayerAuthInputPacket extends DataPacket/* implements ServerboundPacket*/{
 		if($this->playMode === PlayMode::VR){
 			$this->vrGazeDirection = $this->getVector3();
 		}
-		$this->tick = $this->getUnsignedVarInt();
+		$this->tick = $this->getUnsignedVarLong();
 		$this->delta = $this->getVector3();
 	}
 
@@ -164,7 +168,7 @@ class PlayerAuthInputPacket extends DataPacket/* implements ServerboundPacket*/{
 			assert($this->vrGazeDirection !== null);
 			$this->putVector3($this->vrGazeDirection);
 		}
-		$this->putUnsignedVarInt($this->tick);
+		$this->putUnsignedVarLong($this->tick);
 		$this->putVector3($this->delta);
 	}
 

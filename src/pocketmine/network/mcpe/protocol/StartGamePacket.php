@@ -27,31 +27,21 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
-use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\nbt\tag\ListTag;
-use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
-use pocketmine\network\mcpe\NetworkBinaryStream;
 use pocketmine\network\mcpe\NetworkSession;
-use pocketmine\network\mcpe\protocol\types\AuthoritativeMovementType;
+use pocketmine\network\mcpe\protocol\types\BlockPaletteEntry;
 use pocketmine\network\mcpe\protocol\types\EducationEditionOffer;
-use pocketmine\network\mcpe\protocol\types\Experiment;
+use pocketmine\network\mcpe\protocol\types\Experiments;
 use pocketmine\network\mcpe\protocol\types\GameRuleType;
 use pocketmine\network\mcpe\protocol\types\GeneratorType;
+use pocketmine\network\mcpe\protocol\types\ItemTypeEntry;
 use pocketmine\network\mcpe\protocol\types\MultiplayerGameVisibility;
+use pocketmine\network\mcpe\protocol\types\PlayerMovementType;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
 use pocketmine\network\mcpe\protocol\types\SpawnSettings;
 use function count;
-use function file_get_contents;
-use function json_decode;
-use const pocketmine\RESOURCE_PATH;
 
 class StartGamePacket extends DataPacket{
 	public const NETWORK_ID = ProtocolInfo::START_GAME_PACKET;
-
-	/** @var string|null */
-	private static $blockTableCache = null;
-	/** @var string|null */
-	private static $itemTableCache = null;
 
 	/** @var int */
 	public $entityUniqueId;
@@ -119,10 +109,8 @@ class StartGamePacket extends DataPacket{
 	public $gameRules = [ //TODO: implement this
 		"naturalregeneration" => [GameRuleType::BOOL, false] //Hack for client side regeneration
 	];
-	/** @var Experiment[] */
-	public $experiments = [];
-	/** @var bool */
-	public $experimentsPreviouslyToggled = false;
+	/** @var Experiments */
+	public $experiments;
 	/** @var bool */
 	public $hasBonusChestEnabled = false;
 	/** @var bool */
@@ -166,8 +154,8 @@ class StartGamePacket extends DataPacket{
 	public $premiumWorldTemplateId = "";
 	/** @var bool */
 	public $isTrial = false;
-	/** @var AuthoritativeMovementType */
-	public $authoritativeMovementType = AuthoritativeMovementType::CLIENT;
+	/** @var int */
+	public $playerMovementType = PlayerMovementType::LEGACY;
 	/** @var int */
 	public $currentTick = 0; //only used if isTrial is true
 	/** @var int */
@@ -175,13 +163,17 @@ class StartGamePacket extends DataPacket{
 	/** @var string */
 	public $multiplayerCorrelationId = ""; //TODO: this should be filled with a UUID of some sort
 
-	/** @var CompoundTag[]|null */
-	public $blockTable = null;
 	/**
-	 * @var int[]|null string (name) => int16 (legacyID)
-	 * @phpstan-var array<string, int>|null
+	 * @var BlockPaletteEntry[]
+	 * @phpstan-var list<BlockPaletteEntry>
 	 */
-	public $itemTable = null;
+	public $blockPalette = [];
+
+	/**
+	 * @var ItemTypeEntry[]
+	 * @phpstan-var list<ItemTypeEntry>
+	 */
+	public $itemTable;
 	/** @var bool */
 	public $enableNewInventorySystem = false; //TODO
 
@@ -217,8 +209,7 @@ class StartGamePacket extends DataPacket{
 		$this->commandsEnabled = $this->getBool();
 		$this->isTexturePacksRequired = $this->getBool();
 		$this->gameRules = $this->getGameRules();
-		$this->experiments = $this->getExperiments();
-		$this->experimentsPreviouslyToggled = $this->getBool();
+		$this->experiments = Experiments::read($this);
 		$this->hasBonusChestEnabled = $this->getBool();
 		$this->hasStartWithMapEnabled = $this->getBool();
 		$this->defaultPlayerPermission = $this->getVarInt();
@@ -244,27 +235,25 @@ class StartGamePacket extends DataPacket{
 		$this->worldName = $this->getString();
 		$this->premiumWorldTemplateId = $this->getString();
 		$this->isTrial = $this->getBool();
-		$this->authoritativeMovementType = $this->getUnsignedVarInt();
+		$this->playerMovementType = $this->getVarInt();
 		$this->currentTick = $this->getLLong();
 
 		$this->enchantmentSeed = $this->getVarInt();
 
-		$blockTable = [];
-		for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; ++$i){
-			$name = $this->getString();
-			$tag = (new NetworkLittleEndianNBTStream())->read($this->buffer, false, $this->offset, 512);
-			if(!($tag instanceof CompoundTag)){
-				throw new \UnexpectedValueException("Wrong block root NBT tag type");
-			}
-			$blockTable[$name] = $tag;
+		$this->blockPalette = [];
+		for($i = 0, $len = $this->getUnsignedVarInt(); $i < $len; ++$i){
+			$blockName = $this->getString();
+			$state = $this->getNbtCompoundRoot();
+			$this->blockPalette[] = new BlockPaletteEntry($blockName, $state);
 		}
 
 		$this->itemTable = [];
 		for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; ++$i){
-			$id = $this->getString();
-			$legacyId = $this->getSignedLShort();
-			$componentBased = $this->getBool(); // TODO: figure out where to put this
-			$this->itemTable[$id] = $legacyId;
+			$stringId = $this->getString();
+			$numericId = $this->getSignedLShort();
+			$isComponentBased = $this->getBool();
+
+			$this->itemTable[] = new ItemTypeEntry($stringId, $numericId, $isComponentBased);
 		}
 
 		$this->multiplayerCorrelationId = $this->getString();
@@ -303,8 +292,7 @@ class StartGamePacket extends DataPacket{
 		$this->putBool($this->commandsEnabled);
 		$this->putBool($this->isTexturePacksRequired);
 		$this->putGameRules($this->gameRules);
-		$this->putExperiments($this->experiments);
-		$this->putBool($this->experimentsPreviouslyToggled);
+		$this->experiments->write($this);
 		$this->putBool($this->hasBonusChestEnabled);
 		$this->putBool($this->hasStartWithMapEnabled);
 		$this->putVarInt($this->defaultPlayerPermission);
@@ -329,49 +317,26 @@ class StartGamePacket extends DataPacket{
 		$this->putString($this->worldName);
 		$this->putString($this->premiumWorldTemplateId);
 		$this->putBool($this->isTrial);
-		$this->putUnsignedVarInt($this->authoritativeMovementType);
+		$this->putVarInt($this->playerMovementType);
 		$this->putLLong($this->currentTick);
 
 		$this->putVarInt($this->enchantmentSeed);
 
-		// TODO:
-		if($this->blockTable === null) {
-			$this->blockTable = [];
+		$this->putUnsignedVarInt(count($this->blockPalette));
+		$nbtWriter = new NetworkLittleEndianNBTStream();
+		foreach($this->blockPalette as $entry){
+			$this->putString($entry->getName());
+			$this->put($nbtWriter->write($entry->getStates()));
 		}
-
-		$this->putUnsignedVarInt(count($this->blockTable));
-		foreach ($this->blockTable as $name => $tag) {
-			$this->putString($name);
-			(new NetworkLittleEndianNBTStream())->write($tag);
-		}
-
-		// TODO:
-		if($this->itemTable === null){
-			if(self::$itemTableCache === null){
-				self::$itemTableCache = self::serializeItemTable(json_decode(file_get_contents(RESOURCE_PATH . '/vanilla/runtime_item_ids.json'), true));
-			}
-			$this->put(self::$itemTableCache);
-		}else{
-			$this->put(self::serializeItemTable($this->itemTable));
+		$this->putUnsignedVarInt(count($this->itemTable));
+		foreach($this->itemTable as $entry){
+			$this->putString($entry->getStringId());
+			$this->putLShort($entry->getNumericId());
+			$this->putBool($entry->isComponentBased());
 		}
 
 		$this->putString($this->multiplayerCorrelationId);
 		$this->putBool($this->enableNewInventorySystem);
-	}
-
-	/**
-	 * @param int[] $table
-	 * @phpstan-param array<string, int> $table
-	 */
-	private static function serializeItemTable(array $table) : string{
-		$stream = new NetworkBinaryStream();
-		$stream->putUnsignedVarInt(count($table));
-		foreach($table as $entry){
-			$stream->putString($entry["name"]);
-			$stream->putLShort($entry["id"]);
-			$stream->putBool(false); // TODO
-		}
-		return $stream->getBuffer();
 	}
 
 	public function handle(NetworkSession $session) : bool{
