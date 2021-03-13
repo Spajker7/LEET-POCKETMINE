@@ -44,6 +44,11 @@ use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\protocol\types\CommandOriginData;
 use pocketmine\network\mcpe\protocol\types\EntityLink;
 use pocketmine\network\mcpe\protocol\types\GameRuleType;
+use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
+use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
+use pocketmine\network\mcpe\protocol\types\SkinAnimation;
+use pocketmine\network\mcpe\protocol\types\SkinData;
+use pocketmine\network\mcpe\protocol\types\SkinImage;
 use pocketmine\network\mcpe\protocol\types\StructureEditorData;
 use pocketmine\network\mcpe\protocol\types\StructureSettings;
 use pocketmine\utils\BinaryStream;
@@ -87,6 +92,7 @@ class NetworkBinaryStream extends BinaryStream{
 
 	public function getSkin() : Skin{
 		$skinId = $this->getString();
+		$skinPlayFabId = $this->getString();
 		$skinResourcePatch = $this->getString();
 		$skinData = $this->getImage();
 		$animationCount = $this->getLInt();
@@ -132,7 +138,7 @@ class NetworkBinaryStream extends BinaryStream{
 			);
 		}
 
-		return new Skin($skinId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId, $fullSkinId, $armSize, $skinColor, $personaPieces, $pieceTintColors);
+		return new Skin($skinId, $skinPlayFabId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId, $fullSkinId, $armSize, $skinColor, $personaPieces, $pieceTintColors);
 	}
 
 	/**
@@ -140,6 +146,7 @@ class NetworkBinaryStream extends BinaryStream{
 	 */
 	public function putSkin(Skin $skin){
 		$this->putString($skin->getSkinId());
+		$this->putString($skin->getPlayFabId());
 		$this->putString($skin->getSkinResourcePatch());
 		$this->putImage($skin->getSkinData());
 		$this->putLInt(count($skin->getAnimations()));
@@ -237,18 +244,15 @@ class NetworkBinaryStream extends BinaryStream{
 			if($nbt->hasTag(self::DAMAGE_TAG, IntTag::class)){
 				$meta = $nbt->getInt(self::DAMAGE_TAG);
 				$nbt->removeTag(self::DAMAGE_TAG);
-				if($nbt->count() === 0){
+				if(($conflicted = $nbt->getTag(self::DAMAGE_TAG_CONFLICT_RESOLUTION)) !== null){
+					$nbt->removeTag(self::DAMAGE_TAG_CONFLICT_RESOLUTION);
+					$conflicted->setName(self::DAMAGE_TAG);
+					$nbt->setTag($conflicted);
+				}elseif($nbt->count() === 0){
 					$nbt = null;
-					goto end;
 				}
 			}
-			if(($conflicted = $nbt->getTag(self::DAMAGE_TAG_CONFLICT_RESOLUTION)) !== null){
-				$nbt->removeTag(self::DAMAGE_TAG_CONFLICT_RESOLUTION);
-				$conflicted->setName(self::DAMAGE_TAG);
-				$nbt->setTag($conflicted);
-			}
 		}
-		end:
 		return ItemFactory::get($id, $meta, $cnt, $nbt);
 	}
 
