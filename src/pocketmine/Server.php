@@ -2237,6 +2237,13 @@ class Server{
 	 * @return void
 	 */
 	public function sendFullPlayerListData(Player $p){
+		foreach($this->playerList as $player){
+			$pk = new PlayerListPacket();
+			$pk->type = PlayerListPacket::TYPE_ADD;
+			$pk->entries[] = PlayerListEntry::createAdditionEntry($player->getUniqueId(), $player->getId(), $player->getDisplayName(), $player->getSkin(), $player->getXuid());
+			$p->dataPacket($pk);
+		}
+		/*
 		$pk = new PlayerListPacket();
 		$pk->type = PlayerListPacket::TYPE_ADD;
 		foreach($this->playerList as $player){
@@ -2244,6 +2251,7 @@ class Server{
 		}
 
 		$p->dataPacket($pk);
+		*/
 	}
 
 	private function checkTickUpdates(int $currentTick, float $tickTime) : void{

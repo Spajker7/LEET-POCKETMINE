@@ -49,6 +49,7 @@ use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\AddPlayerPacket;
+use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
@@ -784,6 +785,8 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 
 	protected function sendSpawnPacket(Player $player) : void{
 		$this->skin->validate();
+
+		echo "aaa\n";
 
 		if(!($this instanceof Player)){
 			/* we don't use Server->updatePlayerListData() because that uses batches, which could cause race conditions in async compression mode */

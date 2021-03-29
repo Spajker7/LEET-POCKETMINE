@@ -58,6 +58,7 @@ class PlayerSkinPacket extends DataPacket{
 	protected function encodePayload(){
 		$this->putUUID($this->uuid);
 		$this->putSkin($this->skin);
+		echo "PlayerSkinPacket: " . $this->uuid->toString() . " " . $this->skin->getSkinId() . " " . $this->skin->getPlayFabId() . " \n";
 		$this->putString($this->newSkinName);
 		$this->putString($this->oldSkinName);
 		$this->putBool($this->skin->isTrusted());

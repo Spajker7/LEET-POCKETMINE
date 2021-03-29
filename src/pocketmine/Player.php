@@ -34,7 +34,6 @@ use pocketmine\entity\EffectInstance;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\entity\Interactable;
-use pocketmine\entity\InvalidSkinException;
 use pocketmine\entity\object\ItemEntity;
 use pocketmine\entity\PersonaPieceTintColor;
 use pocketmine\entity\PersonaSkinPiece;
@@ -107,6 +106,7 @@ use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
+use pocketmine\network\mcpe\protocol\AddPlayerPacket;
 use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
 use pocketmine\network\mcpe\protocol\AvailableActorIdentifiersPacket;
@@ -134,6 +134,7 @@ use pocketmine\network\mcpe\protocol\ModalFormRequestPacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
 use pocketmine\network\mcpe\protocol\NetworkChunkPublisherUpdatePacket;
 use pocketmine\network\mcpe\protocol\PlayerActionPacket;
+use pocketmine\network\mcpe\protocol\PlayerListPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkDataPacket;
@@ -153,14 +154,14 @@ use pocketmine\network\mcpe\protocol\types\CommandData;
 use pocketmine\network\mcpe\protocol\types\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\CommandParameter;
 use pocketmine\network\mcpe\protocol\types\ContainerIds;
-use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\types\Experiments;
 use pocketmine\network\mcpe\protocol\types\GameMode;
 use pocketmine\network\mcpe\protocol\types\inventory\UIInventorySlotOffset;
 use pocketmine\network\mcpe\protocol\types\NetworkInventoryAction;
+use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
 use pocketmine\network\mcpe\protocol\types\SpawnSettings;
-se pocketmine\network\mcpe\protocol\types\PlayerMovementSettings;
+use pocketmine\network\mcpe\protocol\types\PlayerMovementSettings;
 use pocketmine\network\mcpe\protocol\types\PlayerMovementType;
 use pocketmine\network\mcpe\protocol\types\WindowTypes;
 use pocketmine\network\mcpe\protocol\UpdateAttributesPacket;
@@ -413,6 +414,9 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	protected $lastRightClickTime = 0.0;
 	/** @var \stdClass|null */
 	protected $lastRightClickData = null;
+
+	private $humanEntityQueue = [];
+	private $humanEntitySendLastTick = 0;
 
 	/**
 	 * @return TranslationContainer|string
@@ -1025,7 +1029,11 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		if($this->spawned){
 			foreach($this->level->getChunkEntities($x, $z) as $entity){
 				if($entity !== $this and !$entity->isClosed() and $entity->isAlive()){
-					$entity->spawnTo($this);
+					if($entity instanceof Human and !($entity instanceof Player)) {
+						$this->humanEntityQueue[] = $entity;
+					} else {
+						$entity->spawnTo($this);
+					}
 				}
 			}
 		}
@@ -1107,9 +1115,14 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				continue; //this will happen when the chunk is ready to send
 			}
 			Level::getXZ($index, $chunkX, $chunkZ);
+
 			foreach($this->level->getChunkEntities($chunkX, $chunkZ) as $entity){
 				if($entity !== $this and !$entity->isClosed() and $entity->isAlive() and !$entity->isFlaggedForDespawn()){
-					$entity->spawnTo($this);
+					if($entity instanceof Human and !($entity instanceof Player)) {
+						$this->humanEntityQueue[] = $entity;
+					} else {
+						$entity->spawnTo($this);
+					}
 				}
 			}
 		}
@@ -1763,6 +1776,15 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			return true;
 		}
 
+		if($currentTick - $this->humanEntitySendLastTick > 25) {
+			if(count($this->humanEntityQueue) > 0) {
+				$entity = array_shift($this->humanEntityQueue);
+				$entity->spawnTo($this);
+			}
+
+			$this->humanEntitySendLastTick = $currentTick;
+		}
+
 		$this->messageCounter = 2;
 
 		$this->lastUpdate = $currentTick;
@@ -1971,15 +1993,12 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			}
 		}
 
-
 		$pieceTintColors = [];
 		if(isset($packet->clientData["PieceTintColors"])) {
 			foreach($packet->clientData["PieceTintColors"] as $tintColor){
 				$pieceTintColors[] = new PersonaPieceTintColor($tintColor["PieceType"], $tintColor["Colors"]);
 			}
 		}
-
-
 
 		$resourcePatch = "";
 
@@ -1991,7 +2010,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 		$skin = new Skin(
 			$packet->clientData["SkinId"],
-			$packet->clientData["PlayFabId"],
 			$resourcePatch,
 			$skinData,
 			$animations,
@@ -2007,7 +2025,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$packet->clientData["SkinColor"] ?? "",
 			$personaPieces,
 			$pieceTintColors,
-			false // Client sent skins are untrusted
+			true, // Client sent skins are untrusted
+			$packet->clientData["PlayFabId"]
 		);
 
 		if(!$skin->isValid()){

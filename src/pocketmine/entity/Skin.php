@@ -51,6 +51,8 @@ class Skin{
 	/** @var string */
 	private $skinId;
 	/** @var string */
+	private $playFabId;
+	/** @var string */
 	private $skinResourcePatch;
 	/** @var SerializedImage */
 	private $skinData;
@@ -83,8 +85,9 @@ class Skin{
 	/** @var string */
 	private $fullId;
 
-	public function __construct(string $skinId, string $skinResourcePatch, SerializedImage $skinData, array $animations = [], SerializedImage $capeData = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, $capeOnClassic = false, string $capeId = "", string $fullId = null, string $armSize = self::ARM_SIZE_WIDE, string $skinColor = "", array $personaPieces = [], array $pieceTintColors = [], bool $isTrusted = false ){
+	public function __construct(string $skinId, string $skinResourcePatch, SerializedImage $skinData, array $animations = [], SerializedImage $capeData = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, $capeOnClassic = false, string $capeId = "", string $fullId = null, string $armSize = self::ARM_SIZE_WIDE, string $skinColor = "", array $personaPieces = [], array $pieceTintColors = [], bool $isTrusted = false, string $playFabId = ""){
 		$this->skinId = $skinId;
+		$this->playFabId = $playFabId;
 		$this->skinResourcePatch = $skinResourcePatch;
 		$this->skinData = $skinData;
 		$this->animations = $animations;
@@ -149,6 +152,14 @@ class Skin{
 	public function getSkinId(): string
 	{
 		return $this->skinId;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getPlayFabId(): string
+	{
+		return $this->playFabId;
 	}
 
 	/**
@@ -345,7 +356,7 @@ class Skin{
 			$personaPieces = [];
 			$pieceTintColors = [];
 			$isVerified = false;
-
+			$playFabId = "";
 
 			if($skinTag->hasTag("ArmSize", StringTag::class)) {
 				$armSize = $skinTag->getString("ArmSize");
@@ -373,6 +384,10 @@ class Skin{
 				$isVerified = $skinTag->getByte("Verified") === 1;
 			}
 
+			if($skinTag->hasTag("PlayFabId", StringTag::class)) {
+				$playFabId = $skinTag->getString("PlayFabId");
+			}
+
 			$skin = new Skin(
 				$skinTag->getString("Name"),
 				$skinTag->getString("SkinResourcePatch", ""),
@@ -390,7 +405,8 @@ class Skin{
 				$skinColor,
 				$personaPieces,
 				$pieceTintColors,
-				$isVerified
+				$isVerified,
+				$playFabId
 			);
 		}
 
@@ -445,7 +461,8 @@ class Skin{
 			new StringTag("SkinColor", $this->getSkinColor()),
 			new ListTag("PersonaPieces", $personaPieces),
 			new ListTag("PieceTintColors", $pieceTintColors),
-			new ByteTag("Verified", $this->isTrusted ? 1: 0)
+			new ByteTag("Verified", $this->isTrusted ? 1: 0),
+			new StringTag("PlayFabId", $this->getPlayFabId())
 		]);
 	}
 }
