@@ -106,7 +106,6 @@ use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
-use pocketmine\network\mcpe\protocol\AddPlayerPacket;
 use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
 use pocketmine\network\mcpe\protocol\AvailableActorIdentifiersPacket;
@@ -134,7 +133,6 @@ use pocketmine\network\mcpe\protocol\ModalFormRequestPacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
 use pocketmine\network\mcpe\protocol\NetworkChunkPublisherUpdatePacket;
 use pocketmine\network\mcpe\protocol\PlayerActionPacket;
-use pocketmine\network\mcpe\protocol\PlayerListPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkDataPacket;
@@ -163,7 +161,6 @@ use pocketmine\network\mcpe\protocol\types\inventory\UIInventorySlotOffset;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemOnEntityTransactionData;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemTransactionData;
 use pocketmine\network\mcpe\protocol\types\NetworkInventoryAction;
-use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
 use pocketmine\network\mcpe\protocol\types\SpawnSettings;
 use pocketmine\network\mcpe\protocol\types\PlayerMovementSettings;
@@ -1996,6 +1993,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 		$skin = new Skin(
 			$packet->clientData["SkinId"],
+			$packet->clientData["PlayFabId"] ?? "",
 			$resourcePatch,
 			$skinData,
 			$animations,
@@ -2012,7 +2010,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$personaPieces,
 			$pieceTintColors,
 			true, // Client sent skins are untrusted
-			$packet->clientData["PlayFabId"]
 		);
 
 		if(!$skin->isValid()){

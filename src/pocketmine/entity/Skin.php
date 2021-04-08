@@ -85,13 +85,13 @@ class Skin{
 	/** @var string */
 	private $fullId;
 
-	public function __construct(string $skinId, string $skinResourcePatch, SerializedImage $skinData, array $animations = [], SerializedImage $capeData = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, $capeOnClassic = false, string $capeId = "", string $fullId = null, string $armSize = self::ARM_SIZE_WIDE, string $skinColor = "", array $personaPieces = [], array $pieceTintColors = [], bool $isTrusted = false, string $playFabId = ""){
+	public function __construct(string $skinId, string $playFabId, string $skinResourcePatch, SerializedImage $skinData, array $animations = [], SerializedImage $capeData = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, $capeOnClassic = false, string $capeId = "", string $fullId = null, string $armSize = self::ARM_SIZE_WIDE, string $skinColor = "", array $personaPieces = [], array $pieceTintColors = [], bool $isTrusted = false){
 		$this->skinId = $skinId;
 		$this->playFabId = $playFabId;
 		$this->skinResourcePatch = $skinResourcePatch;
 		$this->skinData = $skinData;
 		$this->animations = $animations;
-		$this->capeData = $capeData;
+		$this->capeData = $capeData ?? new SerializedImage(0, 0, "");
 		$this->geometryData = $geometryData;
 		$this->animationData = $animationData;
 		$this->premium = $premium;
@@ -116,7 +116,7 @@ class Skin{
 
 	public static function null() : Skin {
 		$skinData = str_repeat("\x00", 8192);
-		return new Skin(hash("md5", $skinData), self::convertLegacyGeometryName("geometry.humanoid.custom"), SerializedImage::fromLegacy($skinData));
+		return new Skin(hash("md5", $skinData), "", self::convertLegacyGeometryName("geometry.humanoid.custom"), SerializedImage::fromLegacy($skinData));
 	}
 
 	public static function convertLegacyGeometryName(string $geometryName) : string{
@@ -328,6 +328,7 @@ class Skin{
 
 			$skin = new Skin(
 				$skinTag->getString("Name"),
+				"",
 				json_encode(["geometry" => ["default" => $skinTag->getString("GeometryName", "")]]),
 				SerializedImage::fromLegacy($skinTag->hasTag("Data", StringTag::class) ? $skinTag->getString("Data") : $skinTag->getByteArray("Data")), //old data (this used to be saved as a StringTag in older versions of PM)
 				[],
@@ -390,6 +391,7 @@ class Skin{
 
 			$skin = new Skin(
 				$skinTag->getString("Name"),
+				$playFabId,
 				$skinTag->getString("SkinResourcePatch", ""),
 				new SerializedImage($skinTag->getInt("SkinImageWidth"), $skinTag->getInt("SkinImageHeight"), $skinTag->getByteArray("Data")),
 				$animations,
@@ -406,7 +408,6 @@ class Skin{
 				$personaPieces,
 				$pieceTintColors,
 				$isVerified,
-				$playFabId
 			);
 		}
 
