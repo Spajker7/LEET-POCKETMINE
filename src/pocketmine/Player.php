@@ -2297,7 +2297,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$this->ip,
 			$this->port,
 			$this->id,
-			$this->level->getName(),
+			$this->level->getFolderName(),
 			round($this->x, 4),
 			round($this->y, 4),
 			round($this->z, 4)
