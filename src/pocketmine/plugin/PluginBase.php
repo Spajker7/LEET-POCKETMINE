@@ -180,6 +180,10 @@ abstract class PluginBase implements Plugin{
 		return null;
 	}
 
+	public function getResourcePath(string $filename) : string{
+		return $this->file . "resources/" . rtrim(str_replace(DIRECTORY_SEPARATOR, "/", $filename), "/");
+	}
+	
 	public function saveResource(string $filename, bool $replace = false) : bool{
 		if(trim($filename) === ""){
 			return false;
