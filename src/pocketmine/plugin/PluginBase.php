@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace pocketmine\plugin;
 
-use pocketmine\command\AnnotatedCommandListener;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\PluginIdentifiableCommand;
@@ -76,9 +75,6 @@ abstract class PluginBase implements Plugin{
 	/** @var TaskScheduler */
 	private $scheduler;
 
-	/** @var AnnotatedCommandListener[] */
-	private $annotatedCommandListeners;
-
 	public function __construct(PluginLoader $loader, Server $server, PluginDescription $description, string $dataFolder, string $file){
 		$this->loader = $loader;
 		$this->server = $server;
@@ -88,7 +84,6 @@ abstract class PluginBase implements Plugin{
 		$this->configFile = $this->dataFolder . "config.yml";
 		$this->logger = new PluginLogger($this);
 		$this->scheduler = new TaskScheduler($this->logger, $this->getFullName());
-		$this->annotatedCommandListeners = [];
 	}
 
 	public function onLoad(){
@@ -185,10 +180,6 @@ abstract class PluginBase implements Plugin{
 		return null;
 	}
 
-	public function getResourcePath(string $filename) : string{
-		return $this->file . "resources/" . rtrim(str_replace(DIRECTORY_SEPARATOR, "/", $filename), "/");
-	}
-
 	public function saveResource(string $filename, bool $replace = false) : bool{
 		if(trim($filename) === ""){
 			return false;
@@ -275,19 +266,6 @@ abstract class PluginBase implements Plugin{
 
 	protected function getFile() : string{
 		return $this->file;
-	}
-
-	public function registerAnnotatedCommandListener(AnnotatedCommandListener $commandListener){
-		if(!in_array($commandListener, $this->annotatedCommandListeners, true)) {
-			$this->annotatedCommandListeners[] = $commandListener;
-		}
-	}
-
-	/**
-	 * @return AnnotatedCommandListener[]
-	 */
-	public function getAnnotatedCommandListeners() : array{
-		return $this->annotatedCommandListeners;
 	}
 
 	/**

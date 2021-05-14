@@ -99,17 +99,14 @@ class CraftingManager{
 		Timings::$craftingDataCacheRebuildTimer->startTiming();
 		$pk = new CraftingDataPacket();
 		$pk->cleanRecipes = true;
-		$networkId = 0;
 
 		foreach($this->shapelessRecipes as $list){
 			foreach($list as $recipe){
-				$recipe->setNetworkId($networkId++);
 				$pk->addShapelessRecipe($recipe);
 			}
 		}
 		foreach($this->shapedRecipes as $list){
 			foreach($list as $recipe){
-				$recipe->setNetworkId($networkId++);
 				$pk->addShapedRecipe($recipe);
 			}
 		}

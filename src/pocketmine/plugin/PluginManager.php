@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace pocketmine\plugin;
 
-use pocketmine\command\PluginAnnotatedCommand;
 use pocketmine\command\PluginCommand;
 use pocketmine\command\SimpleCommandMap;
 use pocketmine\event\Event;
@@ -184,12 +183,6 @@ class PluginManager{
 						$this->plugins[$plugin->getDescription()->getName()] = $plugin;
 
 						$pluginCommands = $this->parseYamlCommands($plugin);
-
-						$pluginAnnotatedCommands = $this->parseAnnotatedCommands($plugin);
-
-						foreach($pluginAnnotatedCommands as $command){
-							$pluginCommands[] = $command;
-						}
 
 						if(count($pluginCommands) > 0){
 							$this->commandMap->registerAll($plugin->getDescription()->getName(), $pluginCommands);
@@ -617,60 +610,6 @@ class PluginManager{
 				}
 
 				$pluginCmds[] = $newCmd;
-			}
-		}
-
-		return $pluginCmds;
-	}
-
-	/**
-	 * @return PluginCommand[]
-	 */
-	protected function parseAnnotatedCommands(Plugin $plugin) : array{
-		$pluginCmds = [];
-
-		$commandListeners = [$plugin];
-
-		foreach ($plugin->getAnnotatedCommandListeners() as $commandListener){
-			$commandListeners[] = $commandListener;
-		}
-
-		foreach ($commandListeners as $commandListener){
-			$reflection = new \ReflectionClass(get_class($commandListener));
-
-			foreach($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method){
-				if(!$method->isStatic()) {
-					$tags = Utils::parseDocComment((string)$method->getDocComment());
-
-					if(isset($tags["command"]) && isset($tags["name"])) {
-						$commandName = $tags["name"];
-
-						$newCmd = new PluginAnnotatedCommand($commandName, $plugin, $commandListener, $method->getName());
-						if(isset($tags["description"])){
-							$newCmd->setDescription($tags["description"]);
-						}
-
-						if(isset($tags["usage"])){
-							$newCmd->setUsage($tags["usage"]);
-						}
-
-						if(isset($tags["permission"])){
-							if(is_bool($tags["permission"])){
-								$newCmd->setPermission($tags["permission"] ? "true" : "false");
-							}elseif(is_string($tags["permission"])){
-								$newCmd->setPermission($tags["permission"]);
-							}else{
-								throw new \InvalidArgumentException("Permission must be a string or boolean, " . gettype($tags["permission"]) . " given");
-							}
-						}
-
-						if(isset($tags["permission-message"])){
-							$newCmd->setPermissionMessage($tags["permission-message"]);
-						}
-
-						$pluginCmds[] = $newCmd;
-					}
-				}
 			}
 		}
 

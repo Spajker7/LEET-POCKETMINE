@@ -25,8 +25,8 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-use pocketmine\entity\Skin;
 use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\network\mcpe\protocol\types\SkinData;
 use pocketmine\utils\UUID;
 
 class PlayerSkinPacket extends DataPacket{
@@ -38,7 +38,7 @@ class PlayerSkinPacket extends DataPacket{
 	public $oldSkinName = "";
 	/** @var string */
 	public $newSkinName = "";
-	/** @var Skin */
+	/** @var SkinData */
 	public $skin;
 
 	protected function decodePayload(){
@@ -46,22 +46,15 @@ class PlayerSkinPacket extends DataPacket{
 		$this->skin = $this->getSkin();
 		$this->newSkinName = $this->getString();
 		$this->oldSkinName = $this->getString();
-
-		if(!$this->feof()) {
-			$this->skin->setTrusted($this->getBool());
-		}
-		else {
-			$this->skin->setTrusted(false);
-		}
+		$this->skin->setVerified($this->getBool());
 	}
 
 	protected function encodePayload(){
 		$this->putUUID($this->uuid);
 		$this->putSkin($this->skin);
-		echo "PlayerSkinPacket: " . $this->uuid->toString() . " " . $this->skin->getSkinId() . " " . $this->skin->getPlayFabId() . " \n";
 		$this->putString($this->newSkinName);
 		$this->putString($this->oldSkinName);
-		$this->putBool($this->skin->isTrusted());
+		$this->putBool($this->skin->isVerified());
 	}
 
 	public function handle(NetworkSession $session) : bool{

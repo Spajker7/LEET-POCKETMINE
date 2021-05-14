@@ -21,18 +21,24 @@
 
 declare(strict_types=1);
 
-namespace pocketmine;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use function defined;
+use pocketmine\entity\InvalidSkinException;
+use pocketmine\entity\Skin;
 
-// composer autoload doesn't use require_once and also pthreads can inherit things
-// TODO: drop this file and use a final class with constants
-if(defined('pocketmine\_VERSION_INFO_INCLUDED')){
-	return;
+/**
+ * Used to convert new skin data to the skin entity or old skin entity to skin data.
+ */
+interface SkinAdapter{
+
+	/**
+	 * Allows you to convert a skin entity to skin data.
+	 */
+	public function toSkinData(Skin $skin) : SkinData;
+
+	/**
+	 * Allows you to convert skin data to a skin entity.
+	 * @throws InvalidSkinException
+	 */
+	public function fromSkinData(SkinData $data) : Skin;
 }
-const _VERSION_INFO_INCLUDED = true;
-
-const NAME = "PocketMine-MP";
-const BASE_VERSION = "3.19.1";
-const IS_DEVELOPMENT_BUILD = false;
-const BUILD_NUMBER = 0;

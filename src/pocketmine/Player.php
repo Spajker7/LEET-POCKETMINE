@@ -33,10 +33,8 @@ use pocketmine\entity\Effect;
 use pocketmine\entity\EffectInstance;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
-use pocketmine\entity\Interactable;
+use pocketmine\entity\InvalidSkinException;
 use pocketmine\entity\object\ItemEntity;
-use pocketmine\entity\PersonaPieceTintColor;
-use pocketmine\entity\PersonaSkinPiece;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\entity\Skin;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
@@ -120,7 +118,6 @@ use pocketmine\network\mcpe\protocol\ContainerClosePacket;
 use pocketmine\network\mcpe\protocol\ContainerOpenPacket;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\DisconnectPacket;
-use pocketmine\network\mcpe\protocol\EmotePacket;
 use pocketmine\network\mcpe\protocol\InteractPacket;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
 use pocketmine\network\mcpe\protocol\ItemFrameDropItemPacket;
@@ -152,6 +149,7 @@ use pocketmine\network\mcpe\protocol\types\CommandData;
 use pocketmine\network\mcpe\protocol\types\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\CommandParameter;
 use pocketmine\network\mcpe\protocol\types\ContainerIds;
+use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\types\Experiments;
 use pocketmine\network\mcpe\protocol\types\GameMode;
 use pocketmine\network\mcpe\protocol\types\inventory\MismatchTransactionData;
@@ -161,10 +159,16 @@ use pocketmine\network\mcpe\protocol\types\inventory\UIInventorySlotOffset;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemOnEntityTransactionData;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemTransactionData;
 use pocketmine\network\mcpe\protocol\types\NetworkInventoryAction;
-use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
-use pocketmine\network\mcpe\protocol\types\SpawnSettings;
+use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
+use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\PlayerMovementSettings;
 use pocketmine\network\mcpe\protocol\types\PlayerMovementType;
+use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
+use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
+use pocketmine\network\mcpe\protocol\types\SkinAnimation;
+use pocketmine\network\mcpe\protocol\types\SkinData;
+use pocketmine\network\mcpe\protocol\types\SkinImage;
+use pocketmine\network\mcpe\protocol\types\SpawnSettings;
 use pocketmine\network\mcpe\protocol\types\WindowTypes;
 use pocketmine\network\mcpe\protocol\UpdateAttributesPacket;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
@@ -180,8 +184,6 @@ use pocketmine\tile\ItemFrame;
 use pocketmine\tile\Spawnable;
 use pocketmine\tile\Tile;
 use pocketmine\timings\Timings;
-use pocketmine\utils\SerializedImage;
-use pocketmine\utils\SkinAnimation;
 use pocketmine\utils\TextFormat;
 use pocketmine\utils\UUID;
 use function abs;
@@ -851,7 +853,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	 * Called when a player changes their skin.
 	 * Plugin developers should not use this, use setSkin() and sendSkin() instead.
 	 */
-	public function changeSkin(Skin $skin) : bool{
+	public function changeSkin(Skin $skin, string $newSkinName, string $oldSkinName) : bool{
 		if(!$skin->isValid()){
 			return false;
 		}
@@ -967,13 +969,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				unset($this->usedItemsCooldown[$itemId]);
 			}
 		}
-	}
-
-	public function handleEmote(EmotePacket $packet) : bool{
-		$pk = EmotePacket::create($this->getId(), $packet->getEmoteId(), EmotePacket::FLAG_SERVER);
-		$this->getLevelNonNull()->broadcastPacketToViewers($this->getPosition(), $pk);
-
-		return true;
 	}
 
 	protected function switchLevel(Level $targetLevel) : bool{
@@ -1272,7 +1267,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->x = $pk->x2 = $this->spawnPosition->getFloorX();
 		$pk->y = $pk->y2 = $this->spawnPosition->getFloorY();
 		$pk->z = $pk->z2 = $this->spawnPosition->getFloorZ();
-		$pk->dimension = $level->getDimension();
+		$pk->dimension = DimensionIds::OVERWORLD;
 		$pk->spawnType = SetSpawnPositionPacket::TYPE_PLAYER_SPAWN;
 
 		$this->dataPacket($pk);
@@ -1940,79 +1935,69 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$this->uuid = UUID::fromString($packet->clientUUID);
 		$this->rawUUID = $this->uuid->toBinary();
 
-		if(isset($packet->clientData["SkinData"])){
-			$data = base64_decode($packet->clientData["SkinData"]);
-			if(isset($packet->clientData["SkinImageWidth"], $packet->clientData["SkinImageHeight"])){
-				$skinData = new SerializedImage((int) $packet->clientData['SkinImageWidth'], (int) $packet->clientData['SkinImageHeight'], $data);
-			}else{
-				$skinData = SerializedImage::fromLegacy(base64_decode($data));
-			}
-		}else{
-			$skinData = SerializedImage::null();
-		}
-
-		if(isset($packet->clientData["CapeData"])){
-			$data = base64_decode($packet->clientData["CapeData"]);
-			if(isset($packet->clientData["CapeImageWidth"], $packet->clientData["CapeImageHeight"])){
-				$capeData = new SerializedImage((int) $packet->clientData["CapeImageWidth"], (int) $packet->clientData["CapeImageHeight"], $data);
-			}else{
-				$capeData = SerializedImage::fromLegacy(base64_decode($data));
-			}
-		}else{
-			$capeData = SerializedImage::null();
-		}
-
 		$animations = [];
-		if(isset($packet->clientData["AnimatedImageData"])){
-			foreach($packet->clientData["AnimatedImageData"] as $data){
-				$animations[] = new SkinAnimation(new SerializedImage($data["ImageWidth"], $data["ImageHeight"], base64_decode($data["Image"])), $data["Type"], $data["Frames"], $data["AnimationExpression"]);
-			}
+		foreach($packet->clientData["AnimatedImageData"] as $animation){
+			$animations[] = new SkinAnimation(
+				new SkinImage(
+					$animation["ImageHeight"],
+					$animation["ImageWidth"],
+					base64_decode($animation["Image"], true)),
+				$animation["Type"],
+				$animation["Frames"],
+				$animation["AnimationExpression"]
+			);
 		}
 
 		$personaPieces = [];
-		if(isset($packet->clientData["PersonaPieces"])){
-			foreach($packet->clientData["PersonaPieces"] as $piece){
-				$personaPieces[] = new PersonaSkinPiece($piece["PieceId"], $piece["PieceType"], $piece["PackId"], $piece["IsDefault"], $piece["ProductId"]);
-			}
+		foreach($packet->clientData["PersonaPieces"] as $piece){
+			$personaPieces[] = new PersonaSkinPiece(
+				$piece["PieceId"],
+				$piece["PieceType"],
+				$piece["PackId"],
+				$piece["IsDefault"],
+				$piece["ProductId"]
+			);
 		}
 
 		$pieceTintColors = [];
-		if(isset($packet->clientData["PieceTintColors"])) {
-			foreach($packet->clientData["PieceTintColors"] as $tintColor){
-				$pieceTintColors[] = new PersonaPieceTintColor($tintColor["PieceType"], $tintColor["Colors"]);
-			}
+		foreach($packet->clientData["PieceTintColors"] as $tintColor){
+			$pieceTintColors[] = new PersonaPieceTintColor($tintColor["PieceType"], $tintColor["Colors"]);
 		}
 
-		$resourcePatch = "";
-
-		if(isset($packet->clientData["SkinResourcePatch"])) {
-			$patch = json_decode(base64_decode($packet->clientData["SkinResourcePatch"], true), true);
-			unset($patch["persona_reset_resource_definitions"]);
-			$resourcePatch = json_encode($patch);
-		}
-
-		$skin = new Skin(
+		$skinData = new SkinData(
 			$packet->clientData["SkinId"],
-			$packet->clientData["PlayFabId"] ?? "",
-			$resourcePatch,
-			$skinData,
+			$packet->clientData["PlayFabId"],
+			base64_decode($packet->clientData["SkinResourcePatch"] ?? "", true),
+			new SkinImage(
+				$packet->clientData["SkinImageHeight"],
+				$packet->clientData["SkinImageWidth"],
+				base64_decode($packet->clientData["SkinData"], true)
+			),
 			$animations,
-			$capeData,
+			new SkinImage(
+				$packet->clientData["CapeImageHeight"],
+				$packet->clientData["CapeImageWidth"],
+				base64_decode($packet->clientData["CapeData"] ?? "", true)
+			),
 			base64_decode($packet->clientData["SkinGeometryData"] ?? "", true),
 			base64_decode($packet->clientData["SkinAnimationData"] ?? "", true),
-			(bool) ($packet->clientData["PremiumSkin"] ?? false),
-			(bool) ($packet->clientData["PersonaSkin"] ?? false),
-			(bool) ($packet->clientData["CapeOnClassicSkin"] ?? false),
+			$packet->clientData["PremiumSkin"] ?? false,
+			$packet->clientData["PersonaSkin"] ?? false,
+			$packet->clientData["CapeOnClassicSkin"] ?? false,
 			$packet->clientData["CapeId"] ?? "",
 			null,
-			$packet->clientData["ArmSize"] ?? Skin::ARM_SIZE_WIDE,
+			$packet->clientData["ArmSize"] ?? SkinData::ARM_SIZE_WIDE,
 			$packet->clientData["SkinColor"] ?? "",
 			$personaPieces,
 			$pieceTintColors,
-			true, // Client sent skins are untrusted
+			true
 		);
 
-		if(!$skin->isValid()){
+		try{
+			$skin = SkinAdapterSingleton::get()->fromSkinData($skinData);
+			$skin->validate();
+		}catch(InvalidSkinException $e){
+			$this->server->getLogger()->debug("$this->username: Invalid skin: " . $e->getMessage());
 			$this->close("", "disconnectionScreen.invalidSkin");
 
 			return true;
@@ -2277,7 +2262,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->pitch = $this->pitch;
 		$pk->yaw = $this->yaw;
 		$pk->seed = -1;
-		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "", $this->level->getDimension());
+		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "", DimensionIds::OVERWORLD); //TODO: implement this properly
 		$pk->worldGamemode = Player::getClientFriendlyGamemode($this->server->getGamemode());
 		$pk->difficulty = $this->level->getDifficulty();
 		$pk->spawnX = $spawnPosition->getFloorX();
@@ -2312,7 +2297,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$this->ip,
 			$this->port,
 			$this->id,
-			$this->level->getFolderName(),
+			$this->level->getName(),
 			round($this->x, 4),
 			round($this->y, 4),
 			round($this->z, 4)
@@ -2702,10 +2687,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 			switch($packet->trData->getActionType()){
 				case UseItemOnEntityTransactionData::ACTION_INTERACT:
-					if($target instanceof Interactable){
-						$target->onInteract($this);
-						return true;
-					}
 					break; //TODO
 				case UseItemOnEntityTransactionData::ACTION_ATTACK:
 					if(!$target->isAlive()){

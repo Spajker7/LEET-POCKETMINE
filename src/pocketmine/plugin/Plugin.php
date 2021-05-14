@@ -26,7 +26,6 @@ declare(strict_types=1);
  */
 namespace pocketmine\plugin;
 
-use pocketmine\command\AnnotatedCommandListener;
 use pocketmine\command\CommandExecutor;
 use pocketmine\scheduler\TaskScheduler;
 use pocketmine\Server;
@@ -120,13 +119,6 @@ interface Plugin extends CommandExecutor{
 	public function getName() : string;
 
 	public function getLogger() : PluginLogger;
-
-	public function registerAnnotatedCommandListener(AnnotatedCommandListener $commandListener);
-
-	/**
-	 * @return AnnotatedCommandListener[]
-	 */
-	public function getAnnotatedCommandListeners() : array;
 
 	/**
 	 * @return PluginLoader

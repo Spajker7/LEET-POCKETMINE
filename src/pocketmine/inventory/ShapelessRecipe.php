@@ -32,8 +32,6 @@ class ShapelessRecipe implements CraftingRecipe{
 	private $ingredients = [];
 	/** @var Item[] */
 	private $results;
-	/** @var int */
-	private $networkId;
 
 	/**
 	 * @param Item[] $ingredients No more than 9 total. This applies to sum of item stack counts, not count of array.
@@ -46,16 +44,6 @@ class ShapelessRecipe implements CraftingRecipe{
 		}
 
 		$this->results = array_map(function(Item $item) : Item{ return clone $item; }, $results);
-	}
-
-	public function getNetworkId(): int
-	{
-		return $this->networkId;
-	}
-
-	public function setNetworkId(int $networkId): void
-	{
-		$this->networkId = $networkId;
 	}
 
 	/**

@@ -21,18 +21,23 @@
 
 declare(strict_types=1);
 
-namespace pocketmine;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use function defined;
+/**
+ * Accessor for SkinAdapter
+ */
+class SkinAdapterSingleton{
+	/** @var SkinAdapter|null */
+	private static $skinAdapter = null;
 
-// composer autoload doesn't use require_once and also pthreads can inherit things
-// TODO: drop this file and use a final class with constants
-if(defined('pocketmine\_VERSION_INFO_INCLUDED')){
-	return;
+	public static function get() : SkinAdapter{
+		if(self::$skinAdapter === null){
+			self::$skinAdapter = new LegacySkinAdapter();
+		}
+		return self::$skinAdapter;
+	}
+
+	public static function set(SkinAdapter $adapter) : void{
+		self::$skinAdapter = $adapter;
+	}
 }
-const _VERSION_INFO_INCLUDED = true;
-
-const NAME = "PocketMine-MP";
-const BASE_VERSION = "3.19.1";
-const IS_DEVELOPMENT_BUILD = false;
-const BUILD_NUMBER = 0;

@@ -65,7 +65,6 @@ use pocketmine\command\defaults\VanillaCommand;
 use pocketmine\command\defaults\VersionCommand;
 use pocketmine\command\defaults\WhitelistCommand;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
-use pocketmine\event\server\CommandPreExecuteEvent;
 use pocketmine\Server;
 use function array_shift;
 use function count;
@@ -241,17 +240,6 @@ class SimpleCommandMap implements CommandMap{
 
 		if($target === null){
 			return false;
-		}
-
-		$ev = new CommandPreExecuteEvent($sender, $target);
-		$ev->call();
-
-		if($ev->isCancelled()){
-			if($ev->getCancelMessage() !== null) {
-				$sender->sendMessage($ev->getCancelMessage());
-			}
-
-			return true;
 		}
 
 		$target->timings->startTiming();

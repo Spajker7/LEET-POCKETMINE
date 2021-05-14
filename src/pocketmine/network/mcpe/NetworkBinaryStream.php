@@ -28,9 +28,6 @@ namespace pocketmine\network\mcpe;
 use pocketmine\block\BlockIds;
 use pocketmine\entity\Attribute;
 use pocketmine\entity\Entity;
-use pocketmine\entity\PersonaPieceTintColor;
-use pocketmine\entity\PersonaSkinPiece;
-use pocketmine\entity\Skin;
 use pocketmine\item\Durable;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
@@ -47,11 +44,14 @@ use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\types\CommandOriginData;
 use pocketmine\network\mcpe\protocol\types\EntityLink;
 use pocketmine\network\mcpe\protocol\types\GameRuleType;
+use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
+use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
+use pocketmine\network\mcpe\protocol\types\SkinAnimation;
+use pocketmine\network\mcpe\protocol\types\SkinData;
+use pocketmine\network\mcpe\protocol\types\SkinImage;
 use pocketmine\network\mcpe\protocol\types\StructureEditorData;
 use pocketmine\network\mcpe\protocol\types\StructureSettings;
 use pocketmine\utils\BinaryStream;
-use pocketmine\utils\SerializedImage;
-use pocketmine\utils\SkinAnimation;
 use pocketmine\utils\UUID;
 use function assert;
 use function count;
@@ -89,17 +89,21 @@ class NetworkBinaryStream extends BinaryStream{
 		$this->putLInt($uuid->getPart(2));
 	}
 
-	public function getSkin() : Skin{
+	public function getSkin() : SkinData{
 		$skinId = $this->getString();
 		$skinPlayFabId = $this->getString();
 		$skinResourcePatch = $this->getString();
-		$skinData = $this->getImage();
+		$skinData = $this->getSkinImage();
 		$animationCount = $this->getLInt();
 		$animations = [];
-		for($i = 0, $count = $animationCount; $i < $count; ++$i){
-			$animations[] = new SkinAnimation($this->getImage(), $this->getLInt(), $this->getLFloat(), $this->getLInt());
+		for($i = 0; $i < $animationCount; ++$i){
+			$skinImage = $this->getSkinImage();
+			$animationType = $this->getLInt();
+			$animationFrames = $this->getLFloat();
+			$expressionType = $this->getLInt();
+			$animations[] = new SkinAnimation($skinImage, $animationType, $animationFrames, $expressionType);
 		}
-		$capeData = $this->getImage();
+		$capeData = $this->getSkinImage();
 		$geometryData = $this->getString();
 		$animationData = $this->getString();
 		$premium = $this->getBool();
@@ -109,19 +113,16 @@ class NetworkBinaryStream extends BinaryStream{
 		$fullSkinId = $this->getString();
 		$armSize = $this->getString();
 		$skinColor = $this->getString();
-
 		$personaPieceCount = $this->getLInt();
 		$personaPieces = [];
 		for($i = 0; $i < $personaPieceCount; ++$i){
-			$personaPieces[] = new PersonaSkinPiece(
-				$pieceId = $this->getString(),
-				$pieceType = $this->getString(),
-				$packId = $this->getString(),
-				$isDefaultPiece = $this->getBool(),
-				$productId = $this->getString()
-			);
+			$pieceId = $this->getString();
+			$pieceType = $this->getString();
+			$packId = $this->getString();
+			$isDefaultPiece = $this->getBool();
+			$productId = $this->getString();
+			$personaPieces[] = new PersonaSkinPiece($pieceId, $pieceType, $packId, $isDefaultPiece, $productId);
 		}
-
 		$pieceTintColorCount = $this->getLInt();
 		$pieceTintColors = [];
 		for($i = 0; $i < $pieceTintColorCount; ++$i){
@@ -137,32 +138,32 @@ class NetworkBinaryStream extends BinaryStream{
 			);
 		}
 
-		return new Skin($skinId, $skinPlayFabId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId, $fullSkinId, $armSize, $skinColor, $personaPieces, $pieceTintColors, true);
+		return new SkinData($skinId, $skinPlayFabId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId, $fullSkinId, $armSize, $skinColor, $personaPieces, $pieceTintColors);
 	}
 
 	/**
 	 * @return void
 	 */
-	public function putSkin(Skin $skin){
+	public function putSkin(SkinData $skin){
 		$this->putString($skin->getSkinId());
 		$this->putString($skin->getPlayFabId());
-		$this->putString($skin->getSkinResourcePatch());
-		$this->putImage($skin->getSkinData());
+		$this->putString($skin->getResourcePatch());
+		$this->putSkinImage($skin->getSkinImage());
 		$this->putLInt(count($skin->getAnimations()));
 		foreach($skin->getAnimations() as $animation){
-			$this->putImage($animation->getImage());
+			$this->putSkinImage($animation->getImage());
 			$this->putLInt($animation->getType());
 			$this->putLFloat($animation->getFrames());
 			$this->putLInt($animation->getExpressionType());
 		}
-		$this->putImage($skin->getCapeData());
+		$this->putSkinImage($skin->getCapeImage());
 		$this->putString($skin->getGeometryData());
 		$this->putString($skin->getAnimationData());
 		$this->putBool($skin->isPremium());
 		$this->putBool($skin->isPersona());
-		$this->putBool($skin->isCapeOnClassic());
+		$this->putBool($skin->isPersonaCapeOnClassic());
 		$this->putString($skin->getCapeId());
-		$this->putString($skin->getFullId());
+		$this->putString($skin->getFullSkinId());
 		$this->putString($skin->getArmSize());
 		$this->putString($skin->getSkinColor());
 		$this->putLInt(count($skin->getPersonaPieces()));
@@ -183,14 +184,14 @@ class NetworkBinaryStream extends BinaryStream{
 		}
 	}
 
-	private function getImage() : SerializedImage{
+	private function getSkinImage() : SkinImage{
 		$width = $this->getLInt();
 		$height = $this->getLInt();
 		$data = $this->getString();
-		return new SerializedImage($height, $width, $data);
+		return new SkinImage($height, $width, $data);
 	}
 
-	private function putImage(SerializedImage $image) : void{
+	private function putSkinImage(SkinImage $image) : void{
 		$this->putLInt($image->getWidth());
 		$this->putLInt($image->getHeight());
 		$this->putString($image->getData());
@@ -259,6 +260,11 @@ class NetworkBinaryStream extends BinaryStream{
 			if($netId === ItemTypeDictionary::getInstance()->fromStringId("minecraft:shield")){
 				$extraData->getLLong(); //"blocking tick" (ffs mojang)
 			}
+
+			if(!$extraData->feof()){
+				throw new \UnexpectedValueException("Unexpected trailing extradata for network item $netId");
+			}
+
 			if($nbt !== null){
 				if($nbt->hasTag(self::DAMAGE_TAG, IntTag::class)){
 					$meta = $nbt->getInt(self::DAMAGE_TAG);
@@ -304,8 +310,15 @@ class NetworkBinaryStream extends BinaryStream{
 
 		$writeExtraCrapInTheMiddle($this);
 
-		$block = $item->getBlock();
-		$this->putVarInt($block->getId() === BlockIds::AIR ? 0 : RuntimeBlockMapping::toStaticRuntimeId($block->getId(), $block->getDamage()));
+		$blockRuntimeId = 0;
+		$isBlockItem = $item->getId() < 256;
+		if($isBlockItem){
+			$block = $item->getBlock();
+			if($block->getId() !== BlockIds::AIR){
+				$blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($block->getId(), $block->getDamage());
+			}
+		}
+		$this->putVarInt($blockRuntimeId);
 
 		$nbt = null;
 		if($item->hasCompoundTag()){
@@ -322,7 +335,7 @@ class NetworkBinaryStream extends BinaryStream{
 				$nbt = new CompoundTag();
 			}
 			$nbt->setInt(self::DAMAGE_TAG, $coreData);
-		}elseif($block->getId() !== BlockIds::AIR && $coreData !== 0){
+		}elseif($isBlockItem && $coreData !== 0){
 			//TODO HACK: This foul-smelling code ensures that we can correctly deserialize an item when the
 			//client sends it back to us, because as of 1.16.220, blockitems quietly discard their metadata
 			//client-side. Aside from being very annoying, this also breaks various server-side behaviours.

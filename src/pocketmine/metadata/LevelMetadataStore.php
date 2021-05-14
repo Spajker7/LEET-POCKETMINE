@@ -30,7 +30,7 @@ use function strtolower;
 class LevelMetadataStore extends MetadataStore{
 
 	private function disambiguate(Level $level, string $metadataKey) : string{
-		return strtolower($level->getFolderName()) . ":" . $metadataKey;
+		return strtolower($level->getName()) . ":" . $metadataKey;
 	}
 
 	/**

@@ -2097,7 +2097,6 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 		$pk = new SetActorDataPacket();
 		$pk->entityRuntimeId = $this->getId();
 		$pk->metadata = $data ?? $this->propertyManager->getAll();
-		$pk->tick = $this->server->getTick(); // TODO
 
 		foreach($player as $p){
 			if($p === $this){

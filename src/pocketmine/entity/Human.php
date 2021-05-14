@@ -49,7 +49,6 @@ use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\AddPlayerPacket;
-use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
@@ -57,6 +56,7 @@ use pocketmine\network\mcpe\protocol\PlayerListPacket;
 use pocketmine\network\mcpe\protocol\PlayerSkinPacket;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
+use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
 use pocketmine\Player;
 use pocketmine\utils\UUID;
 use function array_filter;
@@ -122,8 +122,13 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 	 * @throws \InvalidArgumentException
 	 */
 	protected static function deserializeSkinNBT(CompoundTag $skinTag) : Skin{
-		$skin = Skin::deserializeSkinNBT($skinTag);
-
+		$skin = new Skin(
+			$skinTag->getString("Name"),
+			$skinTag->hasTag("Data", StringTag::class) ? $skinTag->getString("Data") : $skinTag->getByteArray("Data"), //old data (this used to be saved as a StringTag in older versions of PM)
+			$skinTag->getByteArray("CapeData", ""),
+			$skinTag->getString("GeometryName", ""),
+			$skinTag->getByteArray("GeometryData", "")
+		);
 		$skin->validate();
 		return $skin;
 	}
@@ -171,7 +176,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 	public function sendSkin(?array $targets = null) : void{
 		$pk = new PlayerSkinPacket();
 		$pk->uuid = $this->getUniqueId();
-		$pk->skin = $this->skin;
+		$pk->skin = SkinAdapterSingleton::get()->toSkinData($this->skin);
 		$this->server->broadcastPacket($targets ?? $this->hasSpawned, $pk);
 	}
 
@@ -553,7 +558,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 			$this->setNameTag($this->namedtag->getString("NameTag"));
 		}
 
-		$this->uuid = UUID::fromData((string) $this->getId(), $this->skin->getSkinData()->getData(), $this->getNameTag());
+		$this->uuid = UUID::fromData((string) $this->getId(), $this->skin->getSkinData(), $this->getNameTag());
 	}
 
 	protected function initEntity() : void{
@@ -774,7 +779,13 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 		}
 
 		if($this->skin !== null){
-			$this->namedtag->setTag($this->skin->serializeSkinNBT());
+			$this->namedtag->setTag(new CompoundTag("Skin", [
+				new StringTag("Name", $this->skin->getSkinId()),
+				new ByteArrayTag("Data", $this->skin->getSkinData()),
+				new ByteArrayTag("CapeData", $this->skin->getCapeData()),
+				new StringTag("GeometryName", $this->skin->getGeometryName()),
+				new ByteArrayTag("GeometryData", $this->skin->getGeometryData())
+			]));
 		}
 	}
 
@@ -791,7 +802,7 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 			/* we don't use Server->updatePlayerListData() because that uses batches, which could cause race conditions in async compression mode */
 			$pk = new PlayerListPacket();
 			$pk->type = PlayerListPacket::TYPE_ADD;
-			$pk->entries = [PlayerListEntry::createAdditionEntry($this->uuid, $this->id, $this->getName(), $this->skin)];
+			$pk->entries = [PlayerListEntry::createAdditionEntry($this->uuid, $this->id, $this->getName(), SkinAdapterSingleton::get()->toSkinData($this->skin))];
 			$player->dataPacket($pk);
 		}
 
@@ -829,7 +840,6 @@ class Human extends Creature implements ProjectileSource, InventoryHolder{
 		$pk->pitch = $this->pitch;
 		$pk->headYaw = $this->yaw;
 		$pk->mode = $teleport ? MovePlayerPacket::MODE_TELEPORT : MovePlayerPacket::MODE_NORMAL;
-		$pk->tick = $this->server->getTick(); // TODO
 
 		//we can't assume that everyone who is using our chunk wants to see this movement,
 		//because this human might be a player who shouldn't be receiving his own movement.
