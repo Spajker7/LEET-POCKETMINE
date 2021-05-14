@@ -79,6 +79,7 @@ use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
 use pocketmine\network\mcpe\protocol\SetDifficultyPacket;
 use pocketmine\network\mcpe\protocol\SetTimePacket;
+use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 use pocketmine\Player;
 use pocketmine\plugin\Plugin;
@@ -301,6 +302,8 @@ class Level implements ChunkManager, Metadatable{
 	private $blockLightUpdate = null;
 	/** @var SkyLightUpdate|null */
 	private $skyLightUpdate = null;
+	/** @var int */
+	private $dimension = DimensionIds::OVERWORLD;
 
 	public static function chunkHash(int $x, int $z) : int{
 		return (($x & 0xFFFFFFFF) << 32) | ($z & 0xFFFFFFFF);
@@ -413,6 +416,14 @@ class Level implements ChunkManager, Metadatable{
 		$this->temporalVector = new Vector3(0, 0, 0);
 	}
 
+	public function getDimension(): int{
+		return $this->dimension;
+	}
+
+	public function setDimension(int $dimension): void{
+		$this->dimension = $dimension;
+	}
+	
 	/**
 	 * @deprecated
 	 */
@@ -2862,6 +2873,13 @@ class Level implements ChunkManager, Metadatable{
 		return $this->folderName;
 	}
 
+	/**
+	 * Returns the level.dat name
+	 */
+	public function getLevelDatName() : string{
+		return $this->displayName;
+	}
+	
 	/**
 	 * Sets the current time on the level
 	 *

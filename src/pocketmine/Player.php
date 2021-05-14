@@ -1267,7 +1267,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->x = $pk->x2 = $this->spawnPosition->getFloorX();
 		$pk->y = $pk->y2 = $this->spawnPosition->getFloorY();
 		$pk->z = $pk->z2 = $this->spawnPosition->getFloorZ();
-		$pk->dimension = DimensionIds::OVERWORLD;
+		$pk->dimension = $level->getDimension();
 		$pk->spawnType = SetSpawnPositionPacket::TYPE_PLAYER_SPAWN;
 
 		$this->dataPacket($pk);
@@ -2262,7 +2262,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->pitch = $this->pitch;
 		$pk->yaw = $this->yaw;
 		$pk->seed = -1;
-		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "", DimensionIds::OVERWORLD); //TODO: implement this properly
+		$pk->spawnSettings = new SpawnSettings(SpawnSettings::BIOME_TYPE_DEFAULT, "", $this->level->getDimension());
 		$pk->worldGamemode = Player::getClientFriendlyGamemode($this->server->getGamemode());
 		$pk->difficulty = $this->level->getDifficulty();
 		$pk->spawnX = $spawnPosition->getFloorX();
