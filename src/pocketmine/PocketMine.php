@@ -192,6 +192,7 @@ namespace pocketmine {
 		$version = new VersionString(\pocketmine\BASE_VERSION, \pocketmine\IS_DEVELOPMENT_BUILD, \pocketmine\BUILD_NUMBER);
 		define('pocketmine\VERSION', $version->getFullVersion(true));
 
+		/*
 		$gitHash = str_repeat("00", 20);
 
 		if(\Phar::running(true) === ""){
@@ -205,7 +206,7 @@ namespace pocketmine {
 		}
 
 		define('pocketmine\GIT_COMMIT', $gitHash);
-
+		
 		$composerGitHash = InstalledVersions::getReference('pocketmine/pocketmine-mp');
 		if($composerGitHash !== null){
 			$currentGitHash = explode("-", \pocketmine\GIT_COMMIT)[0];
@@ -218,6 +219,7 @@ namespace pocketmine {
 				exit(1);
 			}
 		}
+		*/
 
 		$opts = getopt("", ["data:", "plugins:", "no-wizard", "enable-ansi", "disable-ansi"]);
 
