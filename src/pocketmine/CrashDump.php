@@ -367,7 +367,7 @@ class CrashDump{
 		$this->data["general"]["build"] = \pocketmine\BUILD_NUMBER;
 		$this->data["general"]["is_dev"] = \pocketmine\IS_DEVELOPMENT_BUILD;
 		$this->data["general"]["protocol"] = ProtocolInfo::CURRENT_PROTOCOL;
-		$this->data["general"]["git"] = \pocketmine\GIT_COMMIT;
+		//$this->data["general"]["git"] = \pocketmine\GIT_COMMIT;
 		$this->data["general"]["uname"] = php_uname("a");
 		$this->data["general"]["php"] = phpversion();
 		$this->data["general"]["zend"] = zend_version();
@@ -375,7 +375,7 @@ class CrashDump{
 		$this->data["general"]["os"] = Utils::getOS();
 		$this->data["general"]["composer_libraries"] = $composerLibraries;
 		$this->addLine($this->server->getName() . " version: " . $version->getFullVersion(true) . " [Protocol " . ProtocolInfo::CURRENT_PROTOCOL . "]");
-		$this->addLine("Git commit: " . \pocketmine\GIT_COMMIT);
+		//$this->addLine("Git commit: " . \pocketmine\GIT_COMMIT);
 		$this->addLine("uname -a: " . php_uname("a"));
 		$this->addLine("PHP Version: " . phpversion());
 		$this->addLine("Zend version: " . zend_version());
