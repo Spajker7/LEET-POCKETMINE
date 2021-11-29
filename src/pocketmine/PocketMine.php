@@ -103,8 +103,8 @@ namespace pocketmine {
 			if(substr_count($pthreads_version, ".") < 2){
 				$pthreads_version = "0.$pthreads_version";
 			}
-			if(version_compare($pthreads_version, "3.2.0") < 0){
-				$messages[] = "pthreads >= 3.2.0 is required, while you have $pthreads_version.";
+			if(version_compare($pthreads_version, "4.0.0") < 0 || version_compare($pthreads_version, "5.0.0") > 0){
+				$messages[] = "pthreads ^4.0.0 is required, while you have $pthreads_version.";
 			}
 		}
 
@@ -212,11 +212,8 @@ JIT_WARNING
 
 		set_error_handler([Utils::class, 'errorExceptionHandler']);
 
-		$version = new VersionString(\pocketmine\BASE_VERSION, \pocketmine\IS_DEVELOPMENT_BUILD, \pocketmine\BUILD_NUMBER);
-		define('pocketmine\VERSION', $version->getFullVersion(true));
-
-		/*
 		$gitHash = str_repeat("00", 20);
+		$buildNumber = 0;
 
 		if(\Phar::running(true) === ""){
 			$gitHash = Git::getRepositoryStatePretty(\pocketmine\PATH);
@@ -226,10 +223,17 @@ JIT_WARNING
 			if(isset($meta["git"])){
 				$gitHash = $meta["git"];
 			}
+			if(isset($meta["build"]) && is_int($meta["build"])){
+				$buildNumber = $meta["build"];
+			}
 		}
 
 		define('pocketmine\GIT_COMMIT', $gitHash);
-		
+		define('pocketmine\BUILD_NUMBER', $buildNumber);
+
+		$version = new VersionString(\pocketmine\BASE_VERSION, \pocketmine\IS_DEVELOPMENT_BUILD, \pocketmine\BUILD_NUMBER);
+		define('pocketmine\VERSION', $version->getFullVersion(true));
+
 		$composerGitHash = InstalledVersions::getReference('pocketmine/pocketmine-mp');
 		if($composerGitHash !== null){
 			$currentGitHash = explode("-", \pocketmine\GIT_COMMIT)[0];
@@ -242,7 +246,6 @@ JIT_WARNING
 				exit(1);
 			}
 		}
-		*/
 
 		$opts = getopt("", ["data:", "plugins:", "no-wizard", "enable-ansi", "disable-ansi"]);
 
