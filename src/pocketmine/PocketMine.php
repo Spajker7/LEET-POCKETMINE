@@ -245,6 +245,7 @@ JIT_WARNING
 		$version = new VersionString(\pocketmine\BASE_VERSION, \pocketmine\IS_DEVELOPMENT_BUILD, \pocketmine\BUILD_NUMBER);
 		define('pocketmine\VERSION', $version->getFullVersion(true));
 
+		/*
 		$composerGitHash = InstalledVersions::getReference('pocketmine/pocketmine-mp');
 		if($composerGitHash !== null){
 			$currentGitHash = explode("-", \pocketmine\GIT_COMMIT)[0];
@@ -257,6 +258,7 @@ JIT_WARNING
 				exit(1);
 			}
 		}
+		*/
 
 		$opts = getopt("", ["data:", "plugins:", "no-wizard", "enable-ansi", "disable-ansi"]);
 
