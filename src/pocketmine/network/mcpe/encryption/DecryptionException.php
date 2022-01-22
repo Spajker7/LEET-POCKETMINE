@@ -21,8 +21,8 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\entity;
+namespace pocketmine\network\mcpe\encryption;
 
-final class InvalidSkinException extends \InvalidArgumentException{
+final class DecryptionException extends \RuntimeException{
 
 }

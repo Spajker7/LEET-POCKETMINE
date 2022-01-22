@@ -772,8 +772,6 @@ class Level implements ChunkManager, Metadatable{
 	/**
 	 * @internal
 	 *
-	 * @param Player ...$targets If empty, will send to all players in the level.
-	 *
 	 * @return void
 	 */
 	public function sendTime(Player ...$targets){
@@ -2947,8 +2945,6 @@ class Level implements ChunkManager, Metadatable{
 	}
 
 	/**
-	 * @param Player ...$targets
-	 *
 	 * @return void
 	 */
 	public function sendDifficulty(Player ...$targets){

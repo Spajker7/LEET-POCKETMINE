@@ -21,8 +21,8 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\entity;
+namespace pocketmine\network\mcpe;
 
-final class InvalidSkinException extends \InvalidArgumentException{
+final class JwtException extends \RuntimeException{
 
 }
