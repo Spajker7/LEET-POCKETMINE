@@ -97,10 +97,6 @@ class LevelChunkPacket extends DataPacket/* implements ClientboundPacket*/{
 	protected function decodePayload() : void{
 		$this->chunkX = $this->getVarInt();
 		$this->chunkZ = $this->getVarInt();
-		$this->subChunkCount = $this->getUnsignedVarInt();
-		$this->cacheEnabled = $this->getBool();
-		if($this->cacheEnabled){
-			for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; ++$i){
 
 		$subChunkCountButNotReally = $this->getUnsignedVarInt();
 		if($subChunkCountButNotReally === self::CLIENT_REQUEST_FULL_COLUMN_FAKE_COUNT){
