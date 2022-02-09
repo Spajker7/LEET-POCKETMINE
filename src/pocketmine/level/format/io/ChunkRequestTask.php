@@ -68,7 +68,7 @@ class ChunkRequestTask extends AsyncTask{
 		if($this->levelDimension === DimensionIds::OVERWORLD) {
 			$subChunkCount += 4;
 		}
-		$pk = LevelChunkPacket::withoutCache($this->chunkX, $this->chunkZ, $subChunkCount, $chunk->networkSerialize($this->tiles, $this->levelDimension));
+		$pk = LevelChunkPacket::create($this->chunkX, $this->chunkZ, $subChunkCount, false, null, $chunk->networkSerialize($this->tiles, $this->levelDimension));
 
 		$batch = new BatchPacket();
 		$batch->addPacket($pk);

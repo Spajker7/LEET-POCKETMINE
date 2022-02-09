@@ -21,18 +21,30 @@
 
 declare(strict_types=1);
 
-namespace pocketmine;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use function defined;
+use pocketmine\network\mcpe\NetworkBinaryStream;
 
-// composer autoload doesn't use require_once and also pthreads can inherit things
-// TODO: drop this file and use a final class with constants
-if(defined('pocketmine\_VERSION_INFO_INCLUDED')){
-	return;
+final class SubChunkPacketEntryWithCache{
+
+	public function __construct(
+		private SubChunkPacketEntryCommon $base,
+		private int $usedBlobHash
+	){}
+
+	public function getBase() : SubChunkPacketEntryCommon{ return $this->base; }
+
+	public function getUsedBlobHash() : int{ return $this->usedBlobHash; }
+
+	public static function read(NetworkBinaryStream $in) : self{
+		$base = SubChunkPacketEntryCommon::read($in, true);
+		$usedBlobHash = $in->getLLong();
+
+		return new self($base, $usedBlobHash);
+	}
+
+	public function write(NetworkBinaryStream $out) : void{
+		$this->base->write($out, true);
+		$out->putLLong($this->usedBlobHash);
+	}
 }
-const _VERSION_INFO_INCLUDED = true;
-
-const NAME = "PocketMine-MP";
-const BASE_VERSION = "3.28.1";
-const IS_DEVELOPMENT_BUILD = true;
-const BUILD_CHANNEL = "pm3";

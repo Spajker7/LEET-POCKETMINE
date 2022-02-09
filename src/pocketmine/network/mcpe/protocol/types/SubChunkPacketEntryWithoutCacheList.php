@@ -21,18 +21,19 @@
 
 declare(strict_types=1);
 
-namespace pocketmine;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use function defined;
+final class SubChunkPacketEntryWithoutCacheList{
 
-// composer autoload doesn't use require_once and also pthreads can inherit things
-// TODO: drop this file and use a final class with constants
-if(defined('pocketmine\_VERSION_INFO_INCLUDED')){
-	return;
+	/**
+	 * @param SubChunkPacketEntryWithoutCache[] $entries
+	 */
+	public function __construct(
+		private array $entries
+	){}
+
+	/**
+	 * @return SubChunkPacketEntryWithoutCache[]
+	 */
+	public function getEntries() : array{ return $this->entries; }
 }
-const _VERSION_INFO_INCLUDED = true;
-
-const NAME = "PocketMine-MP";
-const BASE_VERSION = "3.28.1";
-const IS_DEVELOPMENT_BUILD = true;
-const BUILD_CHANNEL = "pm3";
