@@ -209,6 +209,10 @@ class PacketPool{
 		static::registerPacket(new PlayerStartItemCooldownPacket());
 		static::registerPacket(new ScriptMessagePacket());
 		static::registerPacket(new CodeBuilderSourcePacket());
+		static::registerPacket(new TickingAreasLoadStatusPacket());
+		static::registerPacket(new DimensionDataPacket());
+		static::registerPacket(new AgentActionEventPacket());
+		static::registerPacket(new ChangeMobPropertyPacket());
 	}
 
 	/**

@@ -29,6 +29,7 @@ use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\types\DeviceOS;
 use pocketmine\network\mcpe\protocol\types\EntityLink;
+use pocketmine\network\mcpe\protocol\types\GameMode;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\utils\UUID;
 use function count;
@@ -58,6 +59,7 @@ class AddPlayerPacket extends DataPacket{
 	public $headYaw = null; //TODO
 	/** @var ItemStackWrapper */
 	public $item;
+	public $gameMode = GameMode::SURVIVAL;
 	/**
 	 * @var mixed[][]
 	 * @phpstan-var array<int, array{0: int, 1: mixed}>
@@ -99,6 +101,7 @@ class AddPlayerPacket extends DataPacket{
 		$this->yaw = $this->getLFloat();
 		$this->headYaw = $this->getLFloat();
 		$this->item = ItemStackWrapper::read($this);
+		$this->gameMode = $this->getVarInt();
 		$this->metadata = $this->getEntityMetadata();
 
 		$this->uvarint1 = $this->getUnsignedVarInt();
@@ -130,6 +133,7 @@ class AddPlayerPacket extends DataPacket{
 		$this->putLFloat($this->yaw);
 		$this->putLFloat($this->headYaw ?? $this->yaw);
 		$this->item->write($this);
+		$this->putVarInt($this->getVarInt());
 		$this->putEntityMetadata($this->metadata);
 
 		$this->putUnsignedVarInt($this->uvarint1);

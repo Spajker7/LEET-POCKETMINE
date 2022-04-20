@@ -40,12 +40,15 @@ class SpawnParticleEffectPacket extends DataPacket{
 	public $position;
 	/** @var string */
 	public $particleName;
+	/** @var string */
+	public string $molangVariablesJson;
 
 	protected function decodePayload(){
 		$this->dimensionId = $this->getByte();
 		$this->entityUniqueId = $this->getEntityUniqueId();
 		$this->position = $this->getVector3();
 		$this->particleName = $this->getString();
+		$this->molangVariablesJson = $this->getString();
 	}
 
 	protected function encodePayload(){
@@ -53,6 +56,7 @@ class SpawnParticleEffectPacket extends DataPacket{
 		$this->putEntityUniqueId($this->entityUniqueId);
 		$this->putVector3($this->position);
 		$this->putString($this->particleName);
+		$this->putString($this->molangVariablesJson);
 	}
 
 	public function handle(NetworkSession $session) : bool{
