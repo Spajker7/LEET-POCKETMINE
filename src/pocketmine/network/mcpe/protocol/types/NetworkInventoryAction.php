@@ -57,6 +57,7 @@ class NetworkInventoryAction{
 	public const SOURCE_TYPE_ANVIL_RESULT = -12;
 	public const SOURCE_TYPE_ANVIL_OUTPUT = -13;
 
+	public const SOURCE_TYPE_ENCHANT_LAPIS = -16;
 	public const SOURCE_TYPE_ENCHANT_OUTPUT = -17;
 
 	public const SOURCE_TYPE_TRADING_INPUT_1 = -20;

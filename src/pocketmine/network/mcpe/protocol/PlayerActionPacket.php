@@ -25,6 +25,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
+use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\NetworkSession;
 
 class PlayerActionPacket extends DataPacket{
@@ -70,12 +71,19 @@ class PlayerActionPacket extends DataPacket{
 	/** @var int */
 	public $z;
 	/** @var int */
+	public $resultX;
+	/** @var int */
+	public $resultY;
+	/** @var int */
+	public $resultZ;
+	/** @var int */
 	public $face;
 
 	protected function decodePayload(){
 		$this->entityRuntimeId = $this->getEntityRuntimeId();
 		$this->action = $this->getVarInt();
 		$this->getBlockPosition($this->x, $this->y, $this->z);
+		$this->getBlockPosition($this->resultX, $this->resultY, $this->resultZ);
 		$this->face = $this->getVarInt();
 	}
 
@@ -83,6 +91,7 @@ class PlayerActionPacket extends DataPacket{
 		$this->putEntityRuntimeId($this->entityRuntimeId);
 		$this->putVarInt($this->action);
 		$this->putBlockPosition($this->x, $this->y, $this->z);
+		$this->putBlockPosition($this->resultX, $this->resultY, $this->resultZ);
 		$this->putVarInt($this->face);
 	}
 
