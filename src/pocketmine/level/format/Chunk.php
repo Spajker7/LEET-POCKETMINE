@@ -859,13 +859,26 @@ class Chunk{
 			}
 		}
 
-		for($y = 0; $y < $subChunkCount; ++$y){
+		$maxSections = 24;
+		
+		switch($dimension) {
+			case DimensionIds::NETHER:
+				$maxSections = 8;
+				break;
+			case DimensionIds::THE_END:
+				$maxSections = 16;
+				break;
+		}
+		
+		$sections = min($subChunkCount, $maxSections);
+		
+		for($y = 0; $y < $sections; ++$y){
 			$result .= $this->subChunks[$y]->networkSerialize();
 		}
-
+		
 		//TODO: right now we don't support 3D natively, so we just 3Dify our 2D biomes so they fill the column
 		$encodedBiomePalette = $this->networkSerializeBiomesAsPalette();
-		$result .= str_repeat($encodedBiomePalette, 24);
+		$result .= str_repeat($encodedBiomePalette, $maxSections);
 
 		$result .= chr(0); //border block array count
 		//Border block entry format: 1 byte (4 bits X, 4 bits Z). These are however useless since they crash the regular client.
