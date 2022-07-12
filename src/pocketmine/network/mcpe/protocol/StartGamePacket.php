@@ -79,6 +79,8 @@ class StartGamePacket extends DataPacket{
 	public $spawnZ;
 	/** @var bool */
 	public $hasAchievementsDisabled = true;
+	/** @var bool */
+	public $editorWorld = false;
 	/** @var int */
 	public $time = -1;
 	/** @var int */
@@ -207,6 +209,7 @@ class StartGamePacket extends DataPacket{
 		$this->difficulty = $this->getVarInt();
 		$this->getBlockPosition($this->spawnX, $this->spawnY, $this->spawnZ);
 		$this->hasAchievementsDisabled = $this->getBool();
+		$this->editorWorld = $this->getBool();
 		$this->time = $this->getVarInt();
 		$this->eduEditionOffer = $this->getVarInt();
 		$this->hasEduFeaturesEnabled = $this->getBool();
@@ -224,7 +227,7 @@ class StartGamePacket extends DataPacket{
 		$this->experiments = Experiments::read($this);
 		$this->hasBonusChestEnabled = $this->getBool();
 		$this->hasStartWithMapEnabled = $this->getBool();
-		$this->defaultPlayerPermission = $this->getVarInt();
+		$this->defaultPlayerPermission = $this->getByte();
 		$this->serverChunkTickRadius = $this->getLInt();
 		$this->hasLockedBehaviorPack = $this->getBool();
 		$this->hasLockedResourcePack = $this->getBool();
@@ -295,6 +298,7 @@ class StartGamePacket extends DataPacket{
 		$this->putVarInt($this->difficulty);
 		$this->putBlockPosition($this->spawnX, $this->spawnY, $this->spawnZ);
 		$this->putBool($this->hasAchievementsDisabled);
+		$this->putBool($this->editorWorld);
 		$this->putVarInt($this->time);
 		$this->putVarInt($this->eduEditionOffer);
 		$this->putBool($this->hasEduFeaturesEnabled);
@@ -312,7 +316,7 @@ class StartGamePacket extends DataPacket{
 		$this->experiments->write($this);
 		$this->putBool($this->hasBonusChestEnabled);
 		$this->putBool($this->hasStartWithMapEnabled);
-		$this->putVarInt($this->defaultPlayerPermission);
+		$this->putByte($this->defaultPlayerPermission);
 		$this->putLInt($this->serverChunkTickRadius);
 		$this->putBool($this->hasLockedBehaviorPack);
 		$this->putBool($this->hasLockedResourcePack);

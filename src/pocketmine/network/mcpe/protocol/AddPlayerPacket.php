@@ -68,18 +68,12 @@ class AddPlayerPacket extends DataPacket{
 
 	//TODO: adventure settings stuff
 	/** @var int */
-	public $uvarint1 = 0;
+	public $playerPermissions = 0;
 	/** @var int */
-	public $uvarint2 = 0;
+	public $commandPermissions = 0;
+	/** @var array */
+	public $layers = [];
 	/** @var int */
-	public $uvarint3 = 0;
-	/** @var int */
-	public $uvarint4 = 0;
-	/** @var int */
-	public $uvarint5 = 0;
-
-	/** @var int */
-	public $long1 = 0;
 
 	/** @var EntityLink[] */
 	public $links = [];
@@ -92,7 +86,6 @@ class AddPlayerPacket extends DataPacket{
 	protected function decodePayload(){
 		$this->uuid = $this->getUUID();
 		$this->username = $this->getString();
-		$this->entityUniqueId = $this->getEntityUniqueId();
 		$this->entityRuntimeId = $this->getEntityRuntimeId();
 		$this->platformChatId = $this->getString();
 		$this->position = $this->getVector3();
@@ -104,13 +97,15 @@ class AddPlayerPacket extends DataPacket{
 		$this->gameMode = $this->getVarInt();
 		$this->metadata = $this->getEntityMetadata();
 
-		$this->uvarint1 = $this->getUnsignedVarInt();
-		$this->uvarint2 = $this->getUnsignedVarInt();
-		$this->uvarint3 = $this->getUnsignedVarInt();
-		$this->uvarint4 = $this->getUnsignedVarInt();
-		$this->uvarint5 = $this->getUnsignedVarInt();
+		$this->entityUniqueId = $this->getLLong();
 
-		$this->long1 = $this->getLLong();
+		$this->playerPermissions = $this->getByte();
+		$this->commandPermissions = $this->getByte();
+
+		$layerCount = $this->getByte();
+		for($i = 0; $i < $layerCount; ++$i){
+			// TODO: layer
+		}
 
 		$linkCount = $this->getUnsignedVarInt();
 		for($i = 0; $i < $linkCount; ++$i){
@@ -124,7 +119,6 @@ class AddPlayerPacket extends DataPacket{
 	protected function encodePayload(){
 		$this->putUUID($this->uuid);
 		$this->putString($this->username);
-		$this->putEntityUniqueId($this->entityUniqueId ?? $this->entityRuntimeId);
 		$this->putEntityRuntimeId($this->entityRuntimeId);
 		$this->putString($this->platformChatId);
 		$this->putVector3($this->position);
@@ -136,13 +130,15 @@ class AddPlayerPacket extends DataPacket{
 		$this->putVarInt($this->getVarInt());
 		$this->putEntityMetadata($this->metadata);
 
-		$this->putUnsignedVarInt($this->uvarint1);
-		$this->putUnsignedVarInt($this->uvarint2);
-		$this->putUnsignedVarInt($this->uvarint3);
-		$this->putUnsignedVarInt($this->uvarint4);
-		$this->putUnsignedVarInt($this->uvarint5);
+		$this->putLLong($this->entityUniqueId ?? $this->entityRuntimeId);
 
-		$this->putLLong($this->long1);
+		$this->putByte($this->playerPermissions);
+		$this->putByte($this->commandPermissions);
+
+		$this->putByte(count($this->layers));
+		foreach($this->layers as $layer){
+			// TODO: $this->putEntityLink($link);
+		}
 
 		$this->putUnsignedVarInt(count($this->links));
 		foreach($this->links as $link){
