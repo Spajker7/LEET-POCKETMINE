@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\tile;
 
+use pocketmine\item\Durable;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
@@ -108,7 +109,7 @@ class FlowerPot extends Spawnable{
 		$originalNbt = $this->getSpawnCompound();
 
 		if($this->item->getId() !== 0){
-			$network = ItemTranslator::getInstance()->toNetworkId($this->item->getId(), $this->item->getDamage());
+			$network = ItemTranslator::getInstance()->toNetworkId($this->item->getId(), ($this->item instanceof Durable) ? 0 : $this->item->getDamage());
 
 			$originalNbt->setShort(self::TAG_ITEM, $network[0]);
 			$originalNbt->setInt(self::TAG_ITEM_DATA, $network[1]);

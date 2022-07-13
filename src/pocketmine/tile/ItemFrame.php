@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\tile;
 
+use pocketmine\item\Durable;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\nbt\NetworkLittleEndianNBTStream;
@@ -119,7 +120,7 @@ class ItemFrame extends Spawnable{
 		$originalNbt = $this->getSpawnCompound();
 
 		if($this->item->getId() !== 0){
-			$network = ItemTranslator::getInstance()->toNetworkId($this->item->getId(), $this->item->getDamage());
+			$network = ItemTranslator::getInstance()->toNetworkId($this->item->getId(), ($this->item instanceof Durable) ? 0 : $this->item->getDamage());
 
 			$originalNbt->getTag(self::TAG_ITEM, CompoundTag::class)->setShort("id", $network[0]);
 			$originalNbt->getTag(self::TAG_ITEM, CompoundTag::class)->setShort("Damage", $network[1]);
