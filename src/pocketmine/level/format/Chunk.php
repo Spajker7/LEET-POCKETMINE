@@ -35,6 +35,8 @@ use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\Player;
+use pocketmine\tile\FlowerPot;
+use pocketmine\tile\ItemFrame;
 use pocketmine\tile\Spawnable;
 use pocketmine\tile\Tile;
 use pocketmine\utils\AssumptionFailedError;
@@ -896,7 +898,13 @@ class Chunk{
 		$result = "";
 		foreach($this->tiles as $tile){
 			if($tile instanceof Spawnable){
-				$result .= $tile->getSerializedSpawnCompound();
+				if($tile instanceof ItemFrame) {
+					$result .= $tile->getSerializedSpawnCompoundFixed();
+				} elseif ($tile instanceof FlowerPot) {
+					$result .= $tile->getSerializedSpawnCompoundFixed();
+				} else {
+					$result .= $tile->getSerializedSpawnCompound();
+				}
 			}
 		}
 

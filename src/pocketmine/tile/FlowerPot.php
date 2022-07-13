@@ -25,7 +25,10 @@ namespace pocketmine\tile;
 
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
+use pocketmine\nbt\NetworkLittleEndianNBTStream;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\network\mcpe\convert\ItemTranslator;
+use pocketmine\utils\AssumptionFailedError;
 
 class FlowerPot extends Spawnable{
 	public const TAG_ITEM = "item";
@@ -33,6 +36,9 @@ class FlowerPot extends Spawnable{
 
 	/** @var Item */
 	private $item;
+
+	/** @var NetworkLittleEndianNBTStream|null */
+	private static $nbtWriter = null;
 
 	protected function readSaveData(CompoundTag $nbt) : void{
 		$this->item = ItemFactory::get($nbt->getShort(self::TAG_ITEM, 0, true), $nbt->getInt(self::TAG_ITEM_DATA, 0, true), 1);
@@ -92,5 +98,25 @@ class FlowerPot extends Spawnable{
 	protected function addAdditionalSpawnData(CompoundTag $nbt) : void{
 		$nbt->setShort(self::TAG_ITEM, $this->item->getId());
 		$nbt->setInt(self::TAG_ITEM_DATA, $this->item->getDamage());
+	}
+
+	public function getSerializedSpawnCompoundFixed() : string{
+		if(self::$nbtWriter === null){
+			self::$nbtWriter = new NetworkLittleEndianNBTStream();
+		}
+
+		$originalNbt = $this->getSpawnCompound();
+
+		if($this->item->getId() !== 0){
+			$network = ItemTranslator::getInstance()->toNetworkId($this->item->getId(), $this->item->getDamage());
+
+			$originalNbt->setShort(self::TAG_ITEM, $network[0]);
+			$originalNbt->setInt(self::TAG_ITEM_DATA, $network[1]);
+		}
+
+		$spawnCompound = self::$nbtWriter->write($originalNbt);
+		if($spawnCompound === false) throw new AssumptionFailedError("NBTStream->write() should not return false when given a CompoundTag");
+
+		return $spawnCompound;
 	}
 }
