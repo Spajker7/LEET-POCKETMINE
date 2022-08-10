@@ -111,24 +111,4 @@ class ItemFrame extends Spawnable{
 		$nbt->setByte(self::TAG_ITEM_ROTATION, $this->itemRotation);
 		$nbt->setTag($this->item->nbtSerialize(-1, self::TAG_ITEM));
 	}
-
-	public function getSerializedSpawnCompoundFixed() : string{
-		if(self::$nbtWriter === null){
-			self::$nbtWriter = new NetworkLittleEndianNBTStream();
-		}
-
-		$originalNbt = $this->getSpawnCompound();
-
-		if($this->item->getId() !== 0){
-			$network = ItemTranslator::getInstance()->toNetworkId($this->item->getId(), ($this->item instanceof Durable) ? 0 : $this->item->getDamage());
-
-			$originalNbt->getTag(self::TAG_ITEM, CompoundTag::class)->setShort("id", $network[0]);
-			$originalNbt->getTag(self::TAG_ITEM, CompoundTag::class)->setShort("Damage", $network[1]);
-		}
-
-		$spawnCompound = self::$nbtWriter->write($originalNbt);
-		if($spawnCompound === false) throw new AssumptionFailedError("NBTStream->write() should not return false when given a CompoundTag");
-
-		return $spawnCompound;
-	}
 }

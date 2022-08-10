@@ -264,7 +264,8 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 	 *
 	 * @return mixed
 	 */
-	private static function stupid_json_decode(string $json, bool $assoc = false){
+	private static function stupid_json_decode(?string $json, bool $assoc = false){
+		if($json === null) return null;
 		if(preg_match('/^\[(.+)\]$/s', $json, $matches) > 0){
 			$raw = $matches[1];
 			$lastComma = -1;

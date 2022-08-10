@@ -898,13 +898,7 @@ class Chunk{
 		$result = "";
 		foreach($this->tiles as $tile){
 			if($tile instanceof Spawnable){
-				if($tile instanceof ItemFrame) {
-					$result .= $tile->getSerializedSpawnCompoundFixed();
-				} elseif ($tile instanceof FlowerPot) {
-					$result .= $tile->getSerializedSpawnCompoundFixed();
-				} else {
-					$result .= $tile->getSerializedSpawnCompound();
-				}
+				$result .= $tile->getSerializedSpawnCompound();
 			}
 		}
 

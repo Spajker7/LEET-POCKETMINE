@@ -26,19 +26,33 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\utils\Color;
 
 class MapInfoRequestPacket extends DataPacket{
 	public const NETWORK_ID = ProtocolInfo::MAP_INFO_REQUEST_PACKET;
 
 	/** @var int */
 	public $mapId;
+	/** @var array<int, int> */
+	public $clientPixels = [];
 
 	protected function decodePayload(){
 		$this->mapId = $this->getEntityUniqueId();
+		$this->clientPixels = [];
+		for($i = 0, $count = $this->getLInt(); $i < $count; $i++){
+			$color = $this->getLInt();
+			$index = $this->getLShort();
+			$this->clientPixels[$index] = $color;
+		}
 	}
 
 	protected function encodePayload(){
 		$this->putEntityUniqueId($this->mapId);
+		$this->putLInt(count($this->clientPixels));
+		foreach($this->clientPixels as $index => $color){
+			$this->putLInt($color);
+			$this->putLShort($index);
+		}
 	}
 
 	public function handle(NetworkSession $session) : bool{

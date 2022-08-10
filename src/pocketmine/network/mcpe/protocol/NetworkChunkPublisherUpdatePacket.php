@@ -47,6 +47,7 @@ class NetworkChunkPublisherUpdatePacket extends DataPacket{
 	protected function encodePayload(){
 		$this->putSignedBlockPosition($this->x, $this->y, $this->z);
 		$this->putUnsignedVarInt($this->radius);
+		$this->putLInt(0); // TODO:
 	}
 
 	public function handle(NetworkSession $session) : bool{

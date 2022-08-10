@@ -100,24 +100,4 @@ class FlowerPot extends Spawnable{
 		$nbt->setShort(self::TAG_ITEM, $this->item->getId());
 		$nbt->setInt(self::TAG_ITEM_DATA, $this->item->getDamage());
 	}
-
-	public function getSerializedSpawnCompoundFixed() : string{
-		if(self::$nbtWriter === null){
-			self::$nbtWriter = new NetworkLittleEndianNBTStream();
-		}
-
-		$originalNbt = $this->getSpawnCompound();
-
-		if($this->item->getId() !== 0){
-			$network = ItemTranslator::getInstance()->toNetworkId($this->item->getId(), ($this->item instanceof Durable) ? 0 : $this->item->getDamage());
-
-			$originalNbt->setShort(self::TAG_ITEM, $network[0]);
-			$originalNbt->setInt(self::TAG_ITEM_DATA, $network[1]);
-		}
-
-		$spawnCompound = self::$nbtWriter->write($originalNbt);
-		if($spawnCompound === false) throw new AssumptionFailedError("NBTStream->write() should not return false when given a CompoundTag");
-
-		return $spawnCompound;
-	}
 }

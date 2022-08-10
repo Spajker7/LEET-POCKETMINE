@@ -25,6 +25,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
+use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\types\MapDecoration;
@@ -46,6 +47,12 @@ class ClientboundMapItemDataPacket extends DataPacket{
 	public $dimensionId = DimensionIds::OVERWORLD;
 	/** @var bool */
 	public $isLocked = false;
+	/** @var float */
+	public $originX = 0;
+	/** @var float */
+	public $originY = 0;
+	/** @var float */
+	public $originZ = 0;
 
 	/** @var int[] */
 	public $eids = [];
@@ -73,6 +80,7 @@ class ClientboundMapItemDataPacket extends DataPacket{
 		$this->type = $this->getUnsignedVarInt();
 		$this->dimensionId = $this->getByte();
 		$this->isLocked = $this->getBool();
+		$this->getBlockPosition($this->originX, $this->originY, $this->originZ);
 
 		if(($this->type & 0x08) !== 0){
 			$count = $this->getUnsignedVarInt();
@@ -146,6 +154,7 @@ class ClientboundMapItemDataPacket extends DataPacket{
 		$this->putUnsignedVarInt($type);
 		$this->putByte($this->dimensionId);
 		$this->putBool($this->isLocked);
+		$this->putBlockPosition($this->originX, $this->originY, $this->originZ);
 
 		if(($type & 0x08) !== 0){ //TODO: find out what these are for
 			$this->putUnsignedVarInt($eidsCount);

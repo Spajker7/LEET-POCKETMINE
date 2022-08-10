@@ -140,6 +140,10 @@ class StartGamePacket extends DataPacket{
 	public $isWorldTemplateOptionLocked = false;
 	/** @var bool */
 	public $onlySpawnV1Villagers = false;
+	/** @var bool */
+	public $disablePersona = false;
+	/** @var bool */
+	public $disableCustomSkins = false;
 	/** @var string */
 	public $vanillaVersion = ProtocolInfo::MINECRAFT_VERSION_NETWORK;
 	/** @var int */
@@ -152,6 +156,8 @@ class StartGamePacket extends DataPacket{
 	public $eduSharedUriResource = null;
 	/** @var bool|null */
 	public $experimentalGameplayOverride = null;
+	public $chatRestrictionLevel = 0;
+	public $disablePlayerInteractions = false;
 
 	/** @var string */
 	public $levelId = ""; //base64 string, usually the same as world folder name in vanilla
@@ -236,6 +242,8 @@ class StartGamePacket extends DataPacket{
 		$this->isFromWorldTemplate = $this->getBool();
 		$this->isWorldTemplateOptionLocked = $this->getBool();
 		$this->onlySpawnV1Villagers = $this->getBool();
+		$this->disablePersona = $this->getBool();
+		$this->disableCustomSkins = $this->getBool();
 		$this->vanillaVersion = $this->getString();
 		$this->limitedWorldWidth = $this->getLInt();
 		$this->limitedWorldLength = $this->getLInt();
@@ -246,6 +254,8 @@ class StartGamePacket extends DataPacket{
 		}else{
 			$this->experimentalGameplayOverride = null;
 		}
+		$this->chatRestrictionLevel = $this->getByte();
+		$this->disablePlayerInteractions = $this->getBool();
 
 		$this->levelId = $this->getString();
 		$this->worldName = $this->getString();
@@ -325,6 +335,8 @@ class StartGamePacket extends DataPacket{
 		$this->putBool($this->isFromWorldTemplate);
 		$this->putBool($this->isWorldTemplateOptionLocked);
 		$this->putBool($this->onlySpawnV1Villagers);
+		$this->putBool($this->disablePersona);
+		$this->putBool($this->disableCustomSkins);
 		$this->putString($this->vanillaVersion);
 		$this->putLInt($this->limitedWorldWidth);
 		$this->putLInt($this->limitedWorldLength);
@@ -334,6 +346,8 @@ class StartGamePacket extends DataPacket{
 		if($this->experimentalGameplayOverride !== null){
 			$this->putBool($this->experimentalGameplayOverride);
 		}
+		$this->putByte($this->chatRestrictionLevel);
+		$this->putBool($this->disablePlayerInteractions);
 
 		$this->putString($this->levelId);
 		$this->putString($this->worldName);
@@ -363,6 +377,7 @@ class StartGamePacket extends DataPacket{
 		$this->put((new NetworkLittleEndianNBTStream())->write($this->propertyData));
 		$this->putLLong($this->blockPaletteChecksum);
 		$this->putUUID($this->worldTemplateId);
+		$this->putBool(false);
 	}
 
 	public function handle(NetworkSession $session) : bool{
