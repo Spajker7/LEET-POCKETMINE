@@ -88,7 +88,6 @@ class PacketPool{
 		static::registerPacket(new CraftingDataPacket());
 		static::registerPacket(new CraftingEventPacket());
 		static::registerPacket(new GuiDataPickItemPacket());
-		static::registerPacket(new AdventureSettingsPacket());
 		static::registerPacket(new BlockActorDataPacket());
 		static::registerPacket(new PlayerInputPacket());
 		static::registerPacket(new LevelChunkPacket());
@@ -213,6 +212,9 @@ class PacketPool{
 		static::registerPacket(new DimensionDataPacket());
 		static::registerPacket(new AgentActionEventPacket());
 		static::registerPacket(new ChangeMobPropertyPacket());
+		static::registerPacket(new RequestNetworkSettingsPacket());
+		static::registerPacket(new RequestAbilityPacket());
+		static::registerPacket(new UpdateAbilitiesPacket());
 	}
 
 	/**

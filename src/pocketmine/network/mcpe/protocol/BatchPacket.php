@@ -45,6 +45,7 @@ class BatchPacket extends DataPacket{
 	public $payload = "";
 	/** @var int */
 	protected $compressionLevel = 7;
+	public $compressionEnabled = true;
 
 	public function canBeBatched() : bool{
 		return false;
@@ -61,10 +62,15 @@ class BatchPacket extends DataPacket{
 
 	protected function decodePayload(){
 		$data = $this->getRemaining();
-		try{
-			$this->payload = zlib_decode($data, 1024 * 1024 * 2); //Max 2MB
-		}catch(\ErrorException $e){ //zlib decode error
-			$this->payload = "";
+
+		if($this->compressionEnabled){
+			try{
+				$this->payload = zlib_decode($data, 1024 * 1024 * 2); //Max 2MB
+			}catch(\ErrorException $e){ //zlib decode error
+				$this->payload = "";
+			}
+		} else {
+			$this->payload = $data;
 		}
 	}
 
@@ -73,8 +79,12 @@ class BatchPacket extends DataPacket{
 	}
 
 	protected function encodePayload(){
-		$encoded = zlib_encode($this->payload, ZLIB_ENCODING_RAW, $this->compressionLevel);
-		if($encoded === false) throw new AssumptionFailedError("ZLIB compression failed");
+		if($this->compressionEnabled){
+			$encoded = zlib_encode($this->payload, ZLIB_ENCODING_RAW, $this->compressionLevel);
+			if($encoded === false) throw new AssumptionFailedError("ZLIB compression failed");
+		} else {
+			$encoded = $this->payload;
+		}
 		$this->put($encoded);
 	}
 
@@ -103,6 +113,7 @@ class BatchPacket extends DataPacket{
 			if($count++ >= 500){
 				throw new \UnexpectedValueException("Too many packets in a single batch");
 			}
+
 			yield $stream->getString();
 		}
 	}

@@ -26,8 +26,8 @@ namespace pocketmine\network\mcpe;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\ActorPickRequestPacket;
-use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
+use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\BlockActorDataPacket;
 use pocketmine\network\mcpe\protocol\BlockPickRequestPacket;
 use pocketmine\network\mcpe\protocol\BookEditPacket;
@@ -54,7 +54,9 @@ use pocketmine\network\mcpe\protocol\PlayerActionPacket;
 use pocketmine\network\mcpe\protocol\PlayerHotbarPacket;
 use pocketmine\network\mcpe\protocol\PlayerInputPacket;
 use pocketmine\network\mcpe\protocol\PlayerSkinPacket;
+use pocketmine\network\mcpe\protocol\RequestAbilityPacket;
 use pocketmine\network\mcpe\protocol\RequestChunkRadiusPacket;
+use pocketmine\network\mcpe\protocol\RequestNetworkSettingsPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkRequestPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackClientResponsePacket;
 use pocketmine\network\mcpe\protocol\RespawnPacket;
@@ -97,6 +99,10 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 
 		$timings = Timings::getReceiveDataPacketTimings($packet);
 		$timings->startTiming();
+
+		if($packet instanceof BatchPacket) {
+			$packet->compressionEnabled = $this->player->isCompressionEnabled();
+		}
 
 		$packet->decode();
 		if(!$packet->feof() and !$packet->mayHaveUnreadBytes()){
@@ -191,10 +197,6 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 
 	public function handleCraftingEvent(CraftingEventPacket $packet) : bool{
 		return true; //this is a broken useless packet, so we don't use it
-	}
-
-	public function handleAdventureSettings(AdventureSettingsPacket $packet) : bool{
-		return $this->player->handleAdventureSettings($packet);
 	}
 
 	public function handleBlockActorData(BlockActorDataPacket $packet) : bool{
@@ -318,5 +320,17 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 
 	public function handleNetworkStackLatency(NetworkStackLatencyPacket $packet) : bool{
 		return true; //TODO: implement this properly - this is here to silence debug spam from MCPE dev builds
+	}
+
+	public function handleRequestNetworkSettings(RequestNetworkSettingsPacket $packet) : bool{
+		return $this->player->handleRequestNetworkSettings($packet);
+	}
+
+	public function handleRequestAbility(RequestAbilityPacket $packet) : bool{
+		return $this->player->handleRequestAbility($packet);
+	}
+
+	public function handleUpdateAbilities(protocol\UpdateAbilitiesPacket $packet) : bool{
+		return false;
 	}
 }

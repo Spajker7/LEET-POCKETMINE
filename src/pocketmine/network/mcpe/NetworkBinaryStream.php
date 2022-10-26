@@ -372,30 +372,42 @@ class NetworkBinaryStream extends BinaryStream{
 	}
 
 	public function getRecipeIngredient() : Item{
-		$netId = $this->getVarInt();
-		if($netId === 0){
-			return ItemFactory::get(ItemIds::AIR, 0, 0);
+		$descriptorType = $this->getByte();
+
+		if($descriptorType !== 1) {
+			throw new \UnexpectedValueException("Unsupported recipe descriptor " . $descriptorType);
 		}
-		$netData = $this->getVarInt();
-		[$id, $meta] = ItemTranslator::getInstance()->fromNetworkIdWithWildcardHandling($netId, $netData);
+
+		$id = $this->getSignedLShort();
+		if($id !== 0){
+			$meta = $this->getSignedLShort();
+		}else{
+			$meta = 0;
+		}
+
 		$count = $this->getVarInt();
 		return ItemFactory::get($id, $meta, $count);
 	}
 
 	public function putRecipeIngredient(Item $item) : void{
-		if($item->isNull()){
-			$this->putVarInt(0);
-		}else{
+		$this->putByte(1); // int and meta
+
+		$netId = 0;
+
+		if($item->getId() !== 0) {
 			if($item->hasAnyDamageValue()){
 				[$netId, ] = ItemTranslator::getInstance()->toNetworkId($item->getId(), 0);
 				$netData = 0x7fff;
 			}else{
 				[$netId, $netData] = ItemTranslator::getInstance()->toNetworkId($item->getId(), $item->getDamage());
 			}
-			$this->putVarInt($netId);
-			$this->putVarInt($netData);
-			$this->putVarInt($item->getCount());
 		}
+
+		$this->putLShort($netId);
+		if($netId !== 0){
+			$this->putLShort($netData);
+		}
+		$this->putVarInt($item->getCount());
 	}
 
 	/**

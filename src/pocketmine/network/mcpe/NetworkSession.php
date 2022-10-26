@@ -32,7 +32,6 @@ use pocketmine\network\mcpe\protocol\AddItemActorPacket;
 use pocketmine\network\mcpe\protocol\AddPaintingPacket;
 use pocketmine\network\mcpe\protocol\AddPlayerPacket;
 use pocketmine\network\mcpe\protocol\AddVolumeEntityPacket;
-use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
 use pocketmine\network\mcpe\protocol\AgentActionEventPacket;
 use pocketmine\network\mcpe\protocol\AnimateEntityPacket;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
@@ -142,7 +141,9 @@ use pocketmine\network\mcpe\protocol\RemoveActorPacket;
 use pocketmine\network\mcpe\protocol\RemoveEntityPacket;
 use pocketmine\network\mcpe\protocol\RemoveObjectivePacket;
 use pocketmine\network\mcpe\protocol\RemoveVolumeEntityPacket;
+use pocketmine\network\mcpe\protocol\RequestAbilityPacket;
 use pocketmine\network\mcpe\protocol\RequestChunkRadiusPacket;
+use pocketmine\network\mcpe\protocol\RequestNetworkSettingsPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkDataPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkRequestPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackClientResponsePacket;
@@ -414,10 +415,6 @@ abstract class NetworkSession{
 	}
 
 	public function handleGuiDataPickItem(GuiDataPickItemPacket $packet) : bool{
-		return false;
-	}
-
-	public function handleAdventureSettings(AdventureSettingsPacket $packet) : bool{
 		return false;
 	}
 
@@ -914,6 +911,18 @@ abstract class NetworkSession{
 	}
 
 	public function handleChangeMobProperty(ChangeMobPropertyPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleRequestNetworkSettings(RequestNetworkSettingsPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleRequestAbility(RequestAbilityPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleUpdateAbilities(protocol\UpdateAbilitiesPacket $packet) : bool{
 		return false;
 	}
 }

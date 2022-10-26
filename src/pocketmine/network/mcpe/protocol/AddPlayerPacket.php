@@ -31,6 +31,8 @@ use pocketmine\network\mcpe\protocol\types\DeviceOS;
 use pocketmine\network\mcpe\protocol\types\EntityLink;
 use pocketmine\network\mcpe\protocol\types\GameMode;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
+use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
+use pocketmine\network\mcpe\protocol\types\UpdateAbilitiesPacketLayer;
 use pocketmine\utils\UUID;
 use function count;
 
@@ -65,14 +67,16 @@ class AddPlayerPacket extends DataPacket{
 	 * @phpstan-var array<int, array{0: int, 1: mixed}>
 	 */
 	public $metadata = [];
+	public $syncedPropertiesInt = [];
+	public $syncedPropertiesFloat = [];
 
 	//TODO: adventure settings stuff
 	/** @var int */
-	public $playerPermissions = 0;
+	public $playerPermissions = PlayerPermissions::VISITOR;
 	/** @var int */
-	public $commandPermissions = 0;
-	/** @var array */
-	public $layers = [];
+	public $commandPermissions = UpdateAbilitiesPacket::NORMAL;
+	/** @var array<UpdateAbilitiesPacketLayer> */
+	public $layers;
 	/** @var int */
 
 	/** @var EntityLink[] */
@@ -97,14 +101,23 @@ class AddPlayerPacket extends DataPacket{
 		$this->gameMode = $this->getVarInt();
 		$this->metadata = $this->getEntityMetadata();
 
+		for($i = 0; $i < $this->getUnsignedVarInt(); $i++) {
+			$this->syncedPropertiesInt[$this->getUnsignedVarInt()] = $this->getVarInt();
+		}
+
+		for($i = 0; $i < $this->getUnsignedVarInt(); $i++) {
+			$this->syncedPropertiesFloat[$this->getUnsignedVarInt()] = $this->getLFloat();
+		}
+
 		$this->entityUniqueId = $this->getLLong();
 
 		$this->playerPermissions = $this->getByte();
 		$this->commandPermissions = $this->getByte();
 
 		$layerCount = $this->getByte();
+		$this->layers = [];
 		for($i = 0; $i < $layerCount; ++$i){
-			// TODO: layer
+			$this->layers[] = UpdateAbilitiesPacketLayer::decode($this);
 		}
 
 		$linkCount = $this->getUnsignedVarInt();
@@ -130,14 +143,33 @@ class AddPlayerPacket extends DataPacket{
 		$this->putVarInt($this->getVarInt());
 		$this->putEntityMetadata($this->metadata);
 
+		$this->putUnsignedVarInt(count($this->syncedPropertiesInt));
+		foreach($this->syncedPropertiesInt as $key => $value){
+			$this->putUnsignedVarInt($key);
+			$this->putVarInt($value);
+		}
+
+		$this->putUnsignedVarInt(count($this->syncedPropertiesFloat));
+		foreach($this->syncedPropertiesFloat as $key => $value){
+			$this->putUnsignedVarInt($key);
+			$this->putLFloat($value);
+		}
+
 		$this->putLLong($this->entityUniqueId ?? $this->entityRuntimeId);
 
 		$this->putByte($this->playerPermissions);
 		$this->putByte($this->commandPermissions);
 
-		$this->putByte(count($this->layers));
-		foreach($this->layers as $layer){
-			// TODO: $this->putEntityLink($link);
+		$layers = $this->layers ?? [new UpdateAbilitiesPacketLayer(
+				UpdateAbilitiesPacketLayer::LAYER_BASE,
+				array_fill(0, UpdateAbilitiesPacketLayer::NUMBER_OF_ABILITIES, false),
+				0.0,
+				0.0
+			)];
+
+		$this->putByte(count($layers));
+		foreach($layers as $layer){
+			$layer->encode($this);
 		}
 
 		$this->putUnsignedVarInt(count($this->links));

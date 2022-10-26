@@ -169,6 +169,10 @@ class AddActorPacket extends DataPacket{
 	 * @phpstan-var array<int, array{0: int, 1: mixed}>
 	 */
 	public $metadata = [];
+
+	public $syncedPropertiesInt = [];
+	public $syncedPropertiesFloat = [];
+
 	/** @var EntityLink[] */
 	public $links = [];
 
@@ -202,6 +206,15 @@ class AddActorPacket extends DataPacket{
 		}
 
 		$this->metadata = $this->getEntityMetadata();
+
+		for($i = 0; $i < $this->getUnsignedVarInt(); $i++) {
+			$this->syncedPropertiesInt[$this->getUnsignedVarInt()] = $this->getVarInt();
+		}
+
+		for($i = 0; $i < $this->getUnsignedVarInt(); $i++) {
+			$this->syncedPropertiesFloat[$this->getUnsignedVarInt()] = $this->getLFloat();
+		}
+
 		$linkCount = $this->getUnsignedVarInt();
 		for($i = 0; $i < $linkCount; ++$i){
 			$this->links[] = $this->getEntityLink();
@@ -228,6 +241,19 @@ class AddActorPacket extends DataPacket{
 		}
 
 		$this->putEntityMetadata($this->metadata);
+
+		$this->putUnsignedVarInt(count($this->syncedPropertiesInt));
+		foreach($this->syncedPropertiesInt as $key => $value){
+			$this->putUnsignedVarInt($key);
+			$this->putVarInt($value);
+		}
+
+		$this->putUnsignedVarInt(count($this->syncedPropertiesFloat));
+		foreach($this->syncedPropertiesFloat as $key => $value){
+			$this->putUnsignedVarInt($key);
+			$this->putLFloat($value);
+		}
+
 		$this->putUnsignedVarInt(count($this->links));
 		foreach($this->links as $link){
 			$this->putEntityLink($link);

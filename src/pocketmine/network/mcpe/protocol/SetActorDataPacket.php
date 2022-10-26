@@ -38,18 +38,43 @@ class SetActorDataPacket extends DataPacket{
 	 */
 	public $metadata;
 
+	public $syncedPropertiesInt = [];
+	public $syncedPropertiesFloat = [];
+
 	/** @var int */
 	public $tick = 0;
 
 	protected function decodePayload(){
 		$this->entityRuntimeId = $this->getEntityRuntimeId();
 		$this->metadata = $this->getEntityMetadata();
+
+		for($i = 0; $i < $this->getUnsignedVarInt(); $i++) {
+			$this->syncedPropertiesInt[$this->getUnsignedVarInt()] = $this->getVarInt();
+		}
+
+		for($i = 0; $i < $this->getUnsignedVarInt(); $i++) {
+			$this->syncedPropertiesFloat[$this->getUnsignedVarInt()] = $this->getLFloat();
+		}
+
 		$this->tick = $this->getUnsignedVarLong();
 	}
 
 	protected function encodePayload(){
 		$this->putEntityRuntimeId($this->entityRuntimeId);
 		$this->putEntityMetadata($this->metadata);
+
+		$this->putUnsignedVarInt(count($this->syncedPropertiesInt));
+		foreach($this->syncedPropertiesInt as $key => $value){
+			$this->putUnsignedVarInt($key);
+			$this->putVarInt($value);
+		}
+
+		$this->putUnsignedVarInt(count($this->syncedPropertiesFloat));
+		foreach($this->syncedPropertiesFloat as $key => $value){
+			$this->putUnsignedVarInt($key);
+			$this->putLFloat($value);
+		}
+
 		$this->putUnsignedVarLong($this->tick);
 	}
 
