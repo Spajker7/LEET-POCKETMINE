@@ -53,6 +53,7 @@ class CraftingDataPacket extends DataPacket{
 	public const ENTRY_SHULKER_BOX = 5; //TODO
 	public const ENTRY_SHAPELESS_CHEMISTRY = 6; //TODO
 	public const ENTRY_SHAPED_CHEMISTRY = 7; //TODO
+	public const ENTRY_SMITHING_TRANSFORM = 8; //TODO
 
 	/** @var object[] */
 	public $entries = [];
@@ -144,6 +145,14 @@ class CraftingDataPacket extends DataPacket{
 					break;
 				case self::ENTRY_MULTI:
 					$entry["uuid"] = $this->getUUID()->toString();
+					$entry["net_id"] = $this->readGenericTypeNetworkId();
+					break;
+				case self::ENTRY_SMITHING_TRANSFORM:
+					$entry["recipe_id"] = $this->getString();
+					$entry["input"] = $this->getRecipeIngredient();
+					$entry["addition"] = $this->getRecipeIngredient();
+					$entry["output"] = $this->getItemStackWithoutStackId();
+					$entry["block"] = $this->getString();
 					$entry["net_id"] = $this->readGenericTypeNetworkId();
 					break;
 				default:

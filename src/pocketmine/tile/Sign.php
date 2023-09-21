@@ -41,6 +41,7 @@ use function strlen;
 class Sign extends Spawnable{
 	public const TAG_TEXT_BLOB = "Text";
 	public const TAG_TEXT_LINE = "Text%d"; //sprintf()able
+	public const TAG_FRONT_TEXT = "FrontText"; //TAG_Compound
 
 	/**
 	 * @return string[]
@@ -160,8 +161,8 @@ class Sign extends Spawnable{
 			return false;
 		}
 
-		if($nbt->hasTag(self::TAG_TEXT_BLOB, StringTag::class)){
-			$lines = self::fixTextBlob($nbt->getString(self::TAG_TEXT_BLOB));
+		if($nbt->hasTag(Sign::TAG_FRONT_TEXT, CompoundTag::class) && $nbt->getTag(Sign::TAG_FRONT_TEXT, CompoundTag::class)->hasTag(self::TAG_TEXT_BLOB, StringTag::class)){
+			$lines = self::fixTextBlob($nbt->getTag(Sign::TAG_FRONT_TEXT, CompoundTag::class)->getString(self::TAG_TEXT_BLOB));
 		}else{
 			return false;
 		}
@@ -184,6 +185,8 @@ class Sign extends Spawnable{
 
 		if(!$ev->isCancelled()){
 			$this->setText(...$ev->getLines());
+
+			$this->editorEntityRuntimeId = null;
 
 			return true;
 		}else{

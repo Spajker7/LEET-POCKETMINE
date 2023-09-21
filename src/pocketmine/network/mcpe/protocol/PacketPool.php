@@ -34,7 +34,7 @@ class PacketPool{
 	 * @return void
 	 */
 	public static function init(){
-		static::$pool = new \SplFixedArray(256);
+		static::$pool = new \SplFixedArray(512);
 
 		static::registerPacket(new LoginPacket());
 		static::registerPacket(new PlayStatusPacket());
@@ -215,6 +215,7 @@ class PacketPool{
 		static::registerPacket(new RequestNetworkSettingsPacket());
 		static::registerPacket(new RequestAbilityPacket());
 		static::registerPacket(new UpdateAbilitiesPacket());
+		static::registerPacket(new OpenSignPacket());
 	}
 
 	/**

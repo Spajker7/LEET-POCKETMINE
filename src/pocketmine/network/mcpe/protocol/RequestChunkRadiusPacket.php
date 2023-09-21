@@ -32,13 +32,17 @@ class RequestChunkRadiusPacket extends DataPacket{
 
 	/** @var int */
 	public $radius;
+	/** @var int */
+	public $maxRadius;
 
 	protected function decodePayload(){
 		$this->radius = $this->getVarInt();
+		$this->maxRadius = $this->getByte();
 	}
 
 	protected function encodePayload(){
 		$this->putVarInt($this->radius);
+		$this->putByte($this->maxRadius);
 	}
 
 	public function handle(NetworkSession $session) : bool{

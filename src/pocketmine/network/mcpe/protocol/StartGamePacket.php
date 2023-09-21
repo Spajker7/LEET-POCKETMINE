@@ -79,8 +79,8 @@ class StartGamePacket extends DataPacket{
 	public $spawnZ;
 	/** @var bool */
 	public $hasAchievementsDisabled = true;
-	/** @var bool */
-	public $editorWorld = false;
+	/** @var int */
+	public $editorWorld = 0;
 	/** @var int */
 	public $time = -1;
 	/** @var int */
@@ -144,6 +144,8 @@ class StartGamePacket extends DataPacket{
 	public $disablePersona = false;
 	/** @var bool */
 	public $disableCustomSkins = false;
+	/** @var bool */
+	public $muteEmoteAnnouncements = false;
 	/** @var string */
 	public $vanillaVersion = ProtocolInfo::MINECRAFT_VERSION_NETWORK;
 	/** @var int */
@@ -215,7 +217,7 @@ class StartGamePacket extends DataPacket{
 		$this->difficulty = $this->getVarInt();
 		$this->getBlockPosition($this->spawnX, $this->spawnY, $this->spawnZ);
 		$this->hasAchievementsDisabled = $this->getBool();
-		$this->editorWorld = $this->getBool();
+		$this->editorWorld = $this->getVarInt();
 		$this->time = $this->getVarInt();
 		$this->eduEditionOffer = $this->getVarInt();
 		$this->hasEduFeaturesEnabled = $this->getBool();
@@ -244,6 +246,7 @@ class StartGamePacket extends DataPacket{
 		$this->onlySpawnV1Villagers = $this->getBool();
 		$this->disablePersona = $this->getBool();
 		$this->disableCustomSkins = $this->getBool();
+		$this->muteEmoteAnnouncements = $this->getBool();
 		$this->vanillaVersion = $this->getString();
 		$this->limitedWorldWidth = $this->getLInt();
 		$this->limitedWorldLength = $this->getLInt();
@@ -308,7 +311,9 @@ class StartGamePacket extends DataPacket{
 		$this->putVarInt($this->difficulty);
 		$this->putBlockPosition($this->spawnX, $this->spawnY, $this->spawnZ);
 		$this->putBool($this->hasAchievementsDisabled);
-		$this->putBool($this->editorWorld);
+		$this->putVarInt($this->editorWorld);
+		$this->putBool(false);
+		$this->putBool(false);
 		$this->putVarInt($this->time);
 		$this->putVarInt($this->eduEditionOffer);
 		$this->putBool($this->hasEduFeaturesEnabled);
@@ -337,6 +342,7 @@ class StartGamePacket extends DataPacket{
 		$this->putBool($this->onlySpawnV1Villagers);
 		$this->putBool($this->disablePersona);
 		$this->putBool($this->disableCustomSkins);
+		$this->putBool($this->muteEmoteAnnouncements);
 		$this->putString($this->vanillaVersion);
 		$this->putLInt($this->limitedWorldWidth);
 		$this->putLInt($this->limitedWorldLength);
@@ -377,6 +383,8 @@ class StartGamePacket extends DataPacket{
 		$this->put((new NetworkLittleEndianNBTStream())->write($this->propertyData));
 		$this->putLLong($this->blockPaletteChecksum);
 		$this->putUUID($this->worldTemplateId);
+		$this->putBool(false);
+		$this->putBool(false);
 		$this->putBool(false);
 	}
 

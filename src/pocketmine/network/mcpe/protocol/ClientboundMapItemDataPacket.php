@@ -38,6 +38,7 @@ class ClientboundMapItemDataPacket extends DataPacket{
 
 	public const BITFLAG_TEXTURE_UPDATE = 0x02;
 	public const BITFLAG_DECORATION_UPDATE = 0x04;
+	public const BITFLAG_MAP_CREATION = 0x08;
 
 	/** @var int */
 	public $mapId;
@@ -82,14 +83,14 @@ class ClientboundMapItemDataPacket extends DataPacket{
 		$this->isLocked = $this->getBool();
 		$this->getBlockPosition($this->originX, $this->originY, $this->originZ);
 
-		if(($this->type & 0x08) !== 0){
+		if(($this->type & self::BITFLAG_MAP_CREATION) !== 0){
 			$count = $this->getUnsignedVarInt();
 			for($i = 0; $i < $count; ++$i){
 				$this->eids[] = $this->getEntityUniqueId();
 			}
 		}
 
-		if(($this->type & (0x08 | self::BITFLAG_DECORATION_UPDATE | self::BITFLAG_TEXTURE_UPDATE)) !== 0){ //Decoration bitflag or colour bitflag
+		if(($this->type & (self::BITFLAG_MAP_CREATION | self::BITFLAG_DECORATION_UPDATE | self::BITFLAG_TEXTURE_UPDATE)) !== 0){ //Decoration bitflag or colour bitflag
 			$this->scale = $this->getByte();
 		}
 
@@ -142,7 +143,7 @@ class ClientboundMapItemDataPacket extends DataPacket{
 
 		$type = 0;
 		if(($eidsCount = count($this->eids)) > 0){
-			$type |= 0x08;
+			$type |= self::BITFLAG_MAP_CREATION;
 		}
 		if(($decorationCount = count($this->decorations)) > 0){
 			$type |= self::BITFLAG_DECORATION_UPDATE;
@@ -156,14 +157,14 @@ class ClientboundMapItemDataPacket extends DataPacket{
 		$this->putBool($this->isLocked);
 		$this->putBlockPosition($this->originX, $this->originY, $this->originZ);
 
-		if(($type & 0x08) !== 0){ //TODO: find out what these are for
+		if(($type & self::BITFLAG_MAP_CREATION) !== 0){ //TODO: find out what these are for
 			$this->putUnsignedVarInt($eidsCount);
 			foreach($this->eids as $eid){
 				$this->putEntityUniqueId($eid);
 			}
 		}
 
-		if(($type & (0x08 | self::BITFLAG_TEXTURE_UPDATE | self::BITFLAG_DECORATION_UPDATE)) !== 0){
+		if(($type & (self::BITFLAG_MAP_CREATION | self::BITFLAG_TEXTURE_UPDATE | self::BITFLAG_DECORATION_UPDATE)) !== 0){
 			$this->putByte($this->scale);
 		}
 

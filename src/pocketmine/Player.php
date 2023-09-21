@@ -131,6 +131,7 @@ use pocketmine\network\mcpe\protocol\ModalFormRequestPacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
 use pocketmine\network\mcpe\protocol\NetworkChunkPublisherUpdatePacket;
 use pocketmine\network\mcpe\protocol\NetworkSettingsPacket;
+use pocketmine\network\mcpe\protocol\PacketViolationWarningPacket;
 use pocketmine\network\mcpe\protocol\PlayerActionPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
@@ -436,6 +437,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	protected $lastRightClickData = null;
 
 	protected $enableCompression = false;
+
+	protected $lastPlayerSkinChangeTime = 0;
 
 	/**
 	 * @return TranslationContainer|string
@@ -869,6 +872,14 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	 * Plugin developers should not use this, use setSkin() and sendSkin() instead.
 	 */
 	public function changeSkin(Skin $skin, string $newSkinName, string $oldSkinName) : bool{
+		$currentTime = time();
+
+		if ($currentTime - $this->lastPlayerSkinChangeTime < 30) {
+			return false;
+		}
+
+		$this->lastPlayerSkinChangeTime = $currentTime;
+
 		if(!$skin->isValid()){
 			return false;
 		}
@@ -2030,6 +2041,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			$packet->clientData["PersonaSkin"] ?? false,
 			$packet->clientData["CapeOnClassicSkin"] ?? false,
 			true, //assume this is true? there's no field for it ...
+			true
 		);
 
 		try{
@@ -2964,6 +2976,11 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				return false;
 		}
 
+		return true;
+	}
+
+	public function handlePacketViolationWarning(PacketViolationWarningPacket $packet) : bool{
+		var_dump($packet);
 		return true;
 	}
 

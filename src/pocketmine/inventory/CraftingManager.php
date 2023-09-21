@@ -53,7 +53,7 @@ class CraftingManager{
 	}
 
 	public function init() : void{
-		$recipes = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla" . DIRECTORY_SEPARATOR . "recipes.json"), true);
+		$recipes = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla_legacy" . DIRECTORY_SEPARATOR . "legacy_recipes.json"), true);
 		if(!is_array($recipes)){
 			throw new AssumptionFailedError("recipes.json root should contain a map of recipe types");
 		}

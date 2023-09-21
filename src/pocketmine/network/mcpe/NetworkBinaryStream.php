@@ -95,6 +95,11 @@ class NetworkBinaryStream extends BinaryStream{
 		$skinResourcePatch = $this->getString();
 		$skinData = $this->getSkinImage();
 		$animationCount = $this->getLInt();
+
+		if ($animationCount > 10) {
+			throw new \UnexpectedValueException("Error parsing skin: Animation count: $animationCount > 10");
+		}
+
 		$animations = [];
 		for($i = 0; $i < $animationCount; ++$i){
 			$skinImage = $this->getSkinImage();
@@ -113,6 +118,11 @@ class NetworkBinaryStream extends BinaryStream{
 		$skinColor = $this->getString();
 		$personaPieceCount = $this->getLInt();
 		$personaPieces = [];
+
+		if ($personaPieceCount > 20) {
+			throw new \UnexpectedValueException("Error parsing skin: Persona Piece count: $personaPieceCount > 10");
+		}
+
 		for($i = 0; $i < $personaPieceCount; ++$i){
 			$pieceId = $this->getString();
 			$pieceType = $this->getString();
@@ -123,6 +133,11 @@ class NetworkBinaryStream extends BinaryStream{
 		}
 		$pieceTintColorCount = $this->getLInt();
 		$pieceTintColors = [];
+
+		if ($pieceTintColorCount > 20) {
+			throw new \UnexpectedValueException("Error parsing skin: Piece Tint Color count: $pieceTintColorCount > 10");
+		}
+
 		for($i = 0; $i < $pieceTintColorCount; ++$i){
 			$pieceType = $this->getString();
 			$colorCount = $this->getLInt();
@@ -140,7 +155,12 @@ class NetworkBinaryStream extends BinaryStream{
 		$capeOnClassic = $this->getBool();
 		$isPrimaryUser = $this->getBool();
 
-		return new SkinData($skinId, $skinPlayFabId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $geometryDataVersion, $animationData, $capeId, $fullSkinId, $armSize, $skinColor, $personaPieces, $pieceTintColors, true, $premium, $persona, $capeOnClassic, $isPrimaryUser);
+		$overrideSkin = true;
+		if (!$this->feof()) {
+			$this->getBool(); // TODO: whats the point
+		}
+
+		return new SkinData($skinId, $skinPlayFabId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $geometryDataVersion, $animationData, $capeId, $fullSkinId, $armSize, $skinColor, $personaPieces, $pieceTintColors, true, $premium, $persona, $capeOnClassic, $isPrimaryUser, $overrideSkin);
 	}
 
 	/**
@@ -186,6 +206,7 @@ class NetworkBinaryStream extends BinaryStream{
 		$this->putBool($skin->isPersona());
 		$this->putBool($skin->isPersonaCapeOnClassic());
 		$this->putBool($skin->isPrimaryUser());
+		$this->putBool($skin->isOverrideSkin());
 	}
 
 	private function getSkinImage() : SkinImage{

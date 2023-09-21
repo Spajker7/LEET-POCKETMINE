@@ -140,7 +140,7 @@ class AddPlayerPacket extends DataPacket{
 		$this->putLFloat($this->yaw);
 		$this->putLFloat($this->headYaw ?? $this->yaw);
 		$this->item->write($this);
-		$this->putVarInt($this->getVarInt());
+		$this->putVarInt($this->gameMode);
 		$this->putEntityMetadata($this->metadata);
 
 		$this->putUnsignedVarInt(count($this->syncedPropertiesInt));

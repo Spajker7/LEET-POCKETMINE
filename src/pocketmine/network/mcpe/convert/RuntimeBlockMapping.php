@@ -64,7 +64,7 @@ final class RuntimeBlockMapping{
 	}
 
 	private static function setupLegacyMappings() : void{
-		$legacyIdMap = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/block_id_map.json"), true);
+		$legacyIdMap = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla_legacy/block_id_map.json"), true);
 
 		/** @var R12ToCurrentBlockMapEntry[] $legacyStateMap */
 		$legacyStateMap = [];

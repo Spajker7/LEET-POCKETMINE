@@ -46,7 +46,9 @@ use const OPENSSL_ALGO_SHA384;
 
 class VerifyLoginTask extends AsyncTask{
 
-	public const MOJANG_ROOT_PUBLIC_KEY = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
+	public const MOJANG_ROOT_PUBLIC_KEY = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp";
+
+	public const MOJANG_OLD_ROOT_PUBLIC_KEY = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
 
 	private const CLOCK_DRIFT_MAX = 60;
 
@@ -150,7 +152,7 @@ class VerifyLoginTask extends AsyncTask{
 			throw new VerifyLoginException("%pocketmine.disconnect.invalidSession.badSignature");
 		}
 
-		if($currentPublicKey === self::MOJANG_ROOT_PUBLIC_KEY){
+		if($currentPublicKey === self::MOJANG_ROOT_PUBLIC_KEY || $currentPublicKey == self::MOJANG_OLD_ROOT_PUBLIC_KEY){
 			$this->authenticated = true; //we're signed into xbox live
 		}
 

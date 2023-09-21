@@ -37,17 +37,20 @@ class CommandRequestPacket extends DataPacket{
 	public $originData;
 	/** @var bool */
 	public $isInternal;
+	public int $version;
 
 	protected function decodePayload(){
 		$this->command = $this->getString();
 		$this->originData = $this->getCommandOriginData();
 		$this->isInternal = $this->getBool();
+		$this->version = $this->getVarInt();
 	}
 
 	protected function encodePayload(){
 		$this->putString($this->command);
 		$this->putCommandOriginData($this->originData);
 		$this->putBool($this->isInternal);
+		$this->putVarInt($this->version);
 	}
 
 	public function handle(NetworkSession $session) : bool{

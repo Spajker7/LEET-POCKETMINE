@@ -122,7 +122,7 @@ class Item implements ItemIds, \JsonSerializable{
 	public static function initCreativeItems(){
 		self::clearCreativeItems();
 
-		$creativeItems = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla" . DIRECTORY_SEPARATOR . "creativeitems.json"), true);
+		$creativeItems = json_decode(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla_legacy" . DIRECTORY_SEPARATOR . "legacy_creativeitems.json"), true);
 
 		foreach($creativeItems as $data){
 			$item = Item::jsonDeserialize($data);

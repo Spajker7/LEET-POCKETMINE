@@ -26,6 +26,7 @@ namespace pocketmine\block;
 use pocketmine\item\Item;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\OpenSignPacket;
 use pocketmine\Player;
 use pocketmine\tile\Sign as TileSign;
 use pocketmine\tile\Tile;
@@ -71,6 +72,7 @@ class SignPost extends Transparent{
 			$sign = Tile::createTile(Tile::SIGN, $this->getLevelNonNull(), TileSign::createNBT($this, $face, $item, $player));
 			if($player !== null && $sign instanceof TileSign){
 				$sign->setEditorEntityRuntimeId($player->getId());
+				$player->sendDataPacket(OpenSignPacket::create($blockReplace, true));
 			}
 
 			return true;

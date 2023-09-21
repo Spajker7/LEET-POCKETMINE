@@ -38,6 +38,9 @@ class ResourcePacksInfoPacket extends DataPacket{
 	public $hasScripts = false; //if true, causes disconnect for any platform that doesn't support scripts yet
 
 	public bool $forceServerPacks = false;
+
+	public array $cdnUrls = [];
+
 	/** @var ResourcePack[] */
 	public $behaviorPackEntries = [];
 	/** @var ResourcePack[] */
@@ -69,6 +72,13 @@ class ResourcePacksInfoPacket extends DataPacket{
 			$this->getBool();
 			$this->getBool();
 		}
+
+		$this->cdnUrls = [];
+		for($i = 0, $count = $this->getUnsignedVarInt(); $i < $count; $i++){
+			$packId = $this->getString();
+			$cdnUrl = $this->getString();
+			$this->cdnUrls[$packId] = $cdnUrl;
+		}
 	}
 
 	protected function encodePayload(){
@@ -95,6 +105,12 @@ class ResourcePacksInfoPacket extends DataPacket{
 			$this->putString(""); //TODO: content identity
 			$this->putBool(false); //TODO: seems useless for resource packs
 			$this->putBool(false); //TODO: supports RTX
+		}
+
+		$this->putUnsignedVarInt(count($this->cdnUrls));
+		foreach($this->cdnUrls as $packId => $cdnUrl){
+			$this->putString($packId);
+			$this->putString($cdnUrl);
 		}
 	}
 

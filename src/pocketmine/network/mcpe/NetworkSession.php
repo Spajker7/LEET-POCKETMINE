@@ -925,4 +925,8 @@ abstract class NetworkSession{
 	public function handleUpdateAbilities(protocol\UpdateAbilitiesPacket $packet) : bool{
 		return false;
 	}
+
+	public function handleOpenSign(protocol\OpenSignPacket $param): bool{
+		return false;
+	}
 }
