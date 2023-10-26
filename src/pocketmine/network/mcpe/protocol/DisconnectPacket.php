@@ -32,6 +32,7 @@ class DisconnectPacket extends DataPacket{
 
 	/** @var bool */
 	public $hideDisconnectionScreen = false;
+	public int $reason = 0;
 	/** @var string */
 	public $message = "";
 
@@ -40,6 +41,7 @@ class DisconnectPacket extends DataPacket{
 	}
 
 	protected function decodePayload(){
+		$this->reason = $this->getVarInt();
 		$this->hideDisconnectionScreen = $this->getBool();
 		if(!$this->hideDisconnectionScreen){
 			$this->message = $this->getString();
@@ -47,6 +49,7 @@ class DisconnectPacket extends DataPacket{
 	}
 
 	protected function encodePayload(){
+		$this->putVarInt($this->reason);
 		$this->putBool($this->hideDisconnectionScreen);
 		if(!$this->hideDisconnectionScreen){
 			$this->putString($this->message);
