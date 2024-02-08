@@ -64,11 +64,25 @@ class BatchPacket extends DataPacket{
 		$data = $this->getRemaining();
 
 		if($this->compressionEnabled){
-			try{
-				$this->payload = zlib_decode($data, 1024 * 1024 * 2); //Max 2MB
-			}catch(\ErrorException $e){ //zlib decode error
-				$this->payload = "";
+			$compressionType = ord($data[0]);
+
+			switch($compressionType) {
+				case 0x00:
+					try{
+						$this->payload = zlib_decode(substr($data, 1), 1024 * 1024 * 2); //Max 2MB
+					}catch(\ErrorException $e){ //zlib decode error
+						$this->payload = "";
+					}
+					break;
+				case 0xff:
+					$this->payload = substr($data, 1);
+					break;
+
+				default:
+					$this->payload = "";
 			}
+
+
 		} else {
 			$this->payload = $data;
 		}
@@ -80,8 +94,9 @@ class BatchPacket extends DataPacket{
 
 	protected function encodePayload(){
 		if($this->compressionEnabled){
-			$encoded = zlib_encode($this->payload, ZLIB_ENCODING_RAW, $this->compressionLevel);
+			$encoded =  zlib_encode($this->payload, ZLIB_ENCODING_RAW, $this->compressionLevel);
 			if($encoded === false) throw new AssumptionFailedError("ZLIB compression failed");
+			$encoded = "\x00" . $encoded;
 		} else {
 			$encoded = $this->payload;
 		}
